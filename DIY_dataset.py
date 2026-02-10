@@ -241,7 +241,7 @@ def make_swissroll_data(radiusrange=2, thetapara=np.pi, height=1, sizepara=None,
     return put, output, colors
 
 
-date_str = '26-01-07'
+date_str = '26-02-10'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
