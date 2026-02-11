@@ -3,12 +3,9 @@ import torch
 import matplotlib.pyplot as plt
 import imageio.v2 as imageio
 import warnings
-import TopoDataSyn
 import TopoDataSyn.NN_model as NN_model
 from itertools import islice
 from collections import OrderedDict
-
-from matplotlib.lines import lineStyles
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
