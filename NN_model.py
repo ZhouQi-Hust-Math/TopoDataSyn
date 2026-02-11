@@ -130,7 +130,7 @@ def tensor_select_index(trainset=None, testset=None):
         print("数据筛选进度%.2f%%" % (100 * (i+1)/testset.size()[0]))
     return index_list
 
-date_str = '26-02-10'
+date_str = '26-02-12'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
