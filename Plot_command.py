@@ -463,7 +463,7 @@ def Plot_action_diagram(modelpath, data_in, acf=torch.nn.ELU(), figcolor=None, s
         plt.savefig('%s' % p, bbox_inches='tight', pad_inches=0.3, dpi=600)
     plt.show()
 
-date_str = '26-02-13'
+date_str = '26-02-15'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
