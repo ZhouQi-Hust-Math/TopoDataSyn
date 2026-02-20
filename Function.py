@@ -26,6 +26,4 @@ class PELU(torch.nn.Module):
             # Broadcast weight over the second dimension (channel dimension)
             # x is expected to have shape (N, C, ...) where C == num_parameters
             shape = [1, self.num_parameters] + [1] * (x.dim() - 2)
-            print(shape)
-            print(self.weight.view(*shape))
             return torch.where(x >= 0, x, self.weight.view(*shape) * (torch.exp(x) - 1))
