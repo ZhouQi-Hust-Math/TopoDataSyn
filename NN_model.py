@@ -11,15 +11,11 @@ class Net(torch.nn.Module):
         if layer is None:
             if not (isinstance(depth, int) and depth > 0):
                 warnings.warn('深度不是正整数')
-            if isinstance(acf, list):
-                self.acf = acf[0]
-            else:
-                self.acf = acf
             self.net1 = self._make_layer(width=width, depth=depth, w_in=w_in, acf=acf)
             self.net2 = torch.nn.Sequential(
                 torch.nn.Linear(width, w_out),
             )
-            print('网络已创建，宽度为%d，深度为%d，激活函数为%s' % (width, depth, self.acf))
+            print('网络已创建，宽度为%d，深度为%d，激活函数列表为%s' % (width, depth, acf))
             self.width = width
             self.depth = depth
         else:
@@ -28,11 +24,14 @@ class Net(torch.nn.Module):
             self.net2 = torch.nn.Sequential(
                 torch.nn.Linear(layer[-1], w_out),
                 )
-            print('逐层网络已创建, 宽度逐层为%s, 深度为%d, 激活函数为%s' % (layer, depth, acf))
+            print('逐层网络已创建, 宽度逐层为%s, 深度为%d, 激活函数列表为%s' % (layer, depth, acf))
 
 
     def _make_layer(self, width=2, depth=2, w_in=2, acf=torch.nn.ELU()):
-        layers = [torch.nn.Linear(w_in, width), self.acf]
+        if isinstance(acf, list):
+            layers = [torch.nn.Linear(w_in, width), acf[0]]
+        else:
+            layers = [torch.nn.Linear(w_in, width), acf]
         for i in range(depth - 1):  # 创建额外的中间层
             layers.append(torch.nn.Linear(width, width))
             if isinstance(acf, list):

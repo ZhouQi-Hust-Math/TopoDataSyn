@@ -182,9 +182,9 @@ def Plot_NN(figdata=None, figcolor=None, save_path=['./test.png']):
     plt.show()
 
 
-def Plot_layers(modelpath, data_in, acf=torch.nn.ELU(), figcolor=None, fig_row_col=[2, 4], save_path=[], layer_select=[1, -1],
-                activated_pre=False, *, axis_visible = False, cmap='viridis', dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]],
-                layerwise_paranum=2):
+def Plot_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)],
+                *, axis_visible = False, cmap='viridis',
+                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]]):
     # 如果是1维线性数据，则扩容成2维
     if data_in.size()[1] == 1:
         warnings.warn('input data is 1-dimensional')
@@ -215,77 +215,31 @@ def Plot_layers(modelpath, data_in, acf=torch.nn.ELU(), figcolor=None, fig_row_c
         if axis_visible:
             axis_visualize(ax_in, 2)
 
-    old_dict = torch.load(modelpath, map_location='cpu', weights_only=True)['net']
-    layer = []
+    assert 2 + len(layer_show) <= fig_row_col[0] * fig_row_col[1]
 
-    depth = (len(old_dict) - 2) // layerwise_paranum
-    w_in = old_dict['net1.0.weight'].size()[1]
-    w_out = old_dict['net2.0.bias'].size()[0]
+    show_index = 1
+    print('请忽略下面中间步骤的创建网络过程')
+    for l in layer_show:
+        a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
+        show_index += 1
+        new_net = NN_model.Netpre()
+        new_net.net1 = raw_net.net1[0: l+1]
 
-    for i in range(depth):
-        layer.append(old_dict['net1.%d.bias' % (2 * i)].size()[0])
+        pic_data_hid = new_net(data_in).detach().numpy()
 
-    layer1 = layer_select[0]
-    if layer_select[1]==-1:
-        layer2 = depth
-    else:
-        layer2 = layer_select[1]
-    print('本次输出%d到%d层的图像' % (layer1, layer2))
-    assert layer2 <= depth
-    # 显示从a层到b层的图像
-
-    if activated_pre:
-        print('本次将输出每一层激活前的图像')
-        assert 2 * (layer2 - layer1 + 1) + 2 <= fig_row_col[0] * fig_row_col[1]
-    else:
-        assert (layer2 - layer1 + 1) + 2 <= fig_row_col[0] * fig_row_col[1]
-
-    for d in range(layer1, layer2+1):
-        if activated_pre:
-            a, b = 2 * (d + 1 - layer1) // fig_row_col[1], 2 * (d + 1 - layer1) % fig_row_col[1]
-            a1, b1 = (2 * (d + 1 - layer1) - 1)// fig_row_col[1], (2 * (d + 1 - layer1) - 1) % fig_row_col[1]
-        else:
-            a, b = (d + 1 - layer1) // fig_row_col[1], (d + 1 - layer1) % fig_row_col[1]
-
-        islice_re = islice(old_dict, layerwise_paranum * d)  # islice()获取前n个元素
-        new_dict = OrderedDict()  # 准备一个新字典存放要取的元素
-        for i in islice_re:
-            new_dict[i] = old_dict[i]  # 从旧字典取值赋值到新字典
-        new_dict['net2.0.weight'] = torch.rand(w_out, layer[d-1])
-        new_dict['net2.0.bias'] = torch.rand(w_out)
-
-        net = NN_model.Netpre(w_in=w_in, w_out=w_out, layer=layer[0:d], acf=acf)
-        net.load_state_dict(new_dict)
-        pic_data_hid = net(data_in).detach().numpy()
-
-        if activated_pre:
-            del net.net1[-1]
-            pic_data_hid_pre = net(data_in).detach().numpy()
-
-        if layer[d-1] >= 3:
-            if layer[d-1] >= 4:
+        if pic_data_hid.shape[1] >= 3:
+            if pic_data_hid.shape[1] >= 4:
                 warnings.warn("the dimension of hidden layer data is over 3, only the selected 3 dimensions will be plotted")
             ax_hid = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b), projection='3d')
             ax_hid.set_zlabel('z')
-            if activated_pre:
-                ax_hid_pre = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a1, b1), projection='3d')
-                ax_hid_pre.set_zlabel('z')
         else:
             ax_hid = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
-            if activated_pre:
-                ax_hid_pre = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a1, b1))
         ax_hid.set_xlabel('x')
         ax_hid.set_ylabel('y')
         ax_hid.set_aspect('equal')
         ax_hid.set_rasterized(True)  # 将此图层栅格化
-        ax_hid.set_title('Layer%d' % d)
-        if activated_pre:
-            ax_hid_pre.set_xlabel('x')
-            ax_hid_pre.set_ylabel('y')
-            ax_hid_pre.set_aspect('equal')
-            ax_hid_pre.set_rasterized(True)  # 将此图层栅格化
-            ax_hid_pre.set_title('Layer%d(not activated)' % d)
-        if layer[d-1] >= 3:
+
+        if pic_data_hid.shape[1] >= 3:
             ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]], s=0.5, c=figcolor, cmap=cmap)
             if axis_visible:
                 axis_visualize(ax_hid, 3)
@@ -294,36 +248,16 @@ def Plot_layers(modelpath, data_in, acf=torch.nn.ELU(), figcolor=None, fig_row_c
             if axis_visible:
                 axis_visualize(ax_hid, 2)
 
-
-        if activated_pre:
-            if layer[d - 1] >= 3:
-                ax_hid_pre.scatter(pic_data_hid_pre[:, dim_index[1][0]], pic_data_hid_pre[:, dim_index[1][1]],
-                               pic_data_hid_pre[:, dim_index[1][2]], s=0.5, c=figcolor, cmap=cmap)
-                if axis_visible:
-                    axis_visualize(ax_hid_pre, 3)
-            else:
-                ax_hid_pre.scatter(pic_data_hid_pre[:, dim_index[1][0]], pic_data_hid_pre[:, dim_index[1][1]], s=0.5, c=figcolor,
-                               cmap=cmap)
-                if axis_visible:
-                    axis_visualize(ax_hid_pre, 2)
-
-
-    if activated_pre:
-        a, b = (2 * (layer2 + 1 - layer1) + 1) // fig_row_col[1], (2 * (layer2 + 1 - layer1) + 1) % fig_row_col[1]
-    else:
-        a, b = (1 * (layer2 + 1 - layer1) + 1) // fig_row_col[1], (1 * (layer2 + 1 - layer1) + 1) % fig_row_col[1]
-
-    net = NN_model.Net(w_in=w_in, w_out=w_out, layer=layer, acf=acf)
-    net.load_state_dict(old_dict)
-    pic_data_out = net(data_in)
-    if pic_data_out.size()[1] == 1:
+    pic_data_out = raw_net(data_in)
+    if pic_data_out.shape[1] == 1:
         warnings.warn('output data is 1-dimensional')
-        pic_data_out = torch.cat((pic_data_out, torch.zeros(pic_data_out.size()[0], 1)), dim=1).detach().numpy()
+        pic_data_out = torch.cat((pic_data_out, torch.zeros(pic_data_out.shape[0], 1)), dim=1).detach().numpy()
     else:
         pic_data_out = pic_data_out.detach().numpy()
 
-    if w_out >= 3:
-        if w_out >= 4:
+    a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
+    if pic_data_out.shape[1] >= 3:
+        if pic_data_out.shape[1] >= 4:
             warnings.warn(
                 "the dimension of output data is over 3, only the selected 3 dimensions will be plotted")
         ax_out = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b), projection='3d')
@@ -336,7 +270,7 @@ def Plot_layers(modelpath, data_in, acf=torch.nn.ELU(), figcolor=None, fig_row_c
     ax_out.set_rasterized(True)  # 将此图层栅格化
     ax_out.set_title('OUTPUT')
 
-    if w_out >= 3:
+    if pic_data_out.shape[1] >= 3:
         ax_out.scatter(pic_data_out[:, dim_index[2][0]], pic_data_out[:, dim_index[2][1]], pic_data_out[:, dim_index[2][2]], s=0.5, c=figcolor, cmap=cmap)
         if axis_visible:
             axis_visualize(ax_out, 3)
@@ -463,7 +397,7 @@ def Plot_action_diagram(modelpath, data_in, acf=torch.nn.ELU(), figcolor=None, s
         plt.savefig('%s' % p, bbox_inches='tight', pad_inches=0.3, dpi=600)
     plt.show()
 
-date_str = '26-02-15'
+date_str = '26-02-24'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')

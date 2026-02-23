@@ -239,8 +239,39 @@ def make_swissroll_data(radiusrange=2, thetapara=np.pi, height=1, sizepara=None,
     print('数据集已生成，大小为%d乘%d' % (sizepara[0], sizepara[1]))
     return put, output, colors
 
+def make_thickSn_data(r1=3, r2=7, sndim=2, sizepara=21):
+    assert r1<=r2
+    axisdata = np.linspace(start=-r2, stop=r2, endpoint=True, num=sizepara)
+    data_raw = axisdata.reshape((sizepara, 1))
+    for i in range(1, sndim+1):
+        data_temp1 = axisdata[0] * np.ones((np.pow(sizepara, i), 1))
+        data_temp_new = np.concatenate((data_temp1, data_raw), axis=1)
+        for j in axisdata[1:]:
+            data_temp1 = j * np.ones((np.pow(sizepara, i), 1))
+            data_temp2 = np.concatenate((data_temp1, data_raw), axis=1)
+            data_temp_new = np.concatenate((data_temp_new, data_temp2), axis=0)
+        data_raw = data_temp_new.copy()
+    data_sphere = np.ones((1, sndim+1))
+    for k in range(np.size(data_raw, 0)):
+        print('data_sphere创建进度：%d/%d' % (k+1, np.pow(sizepara, sndim+1)))
+        if r1 <= np.linalg.norm(data_raw[k, :], ord=2) <= r2:
+            data_sphere = np.vstack((data_sphere, data_raw[k, :]))
+    data_sphere = np.delete(data_sphere, 0, axis=0)
+    data_sphere_reverse = np.copy(data_sphere)
 
-date_str = '26-02-10'
+    colors = []
+    for m in range(np.size(data_sphere_reverse, 0)):
+        r = np.linalg.norm(data_sphere[m, :], ord=2)
+        colors.append(r)
+        data_sphere_reverse[m, :] = data_sphere_reverse[m, :] * (r1+r2-r) / r
+    colors = np.array(colors)
+
+    sphere1 = torch.tensor(data_sphere, dtype=torch.float64)
+    sphere2 = torch.tensor(data_sphere_reverse, dtype=torch.float64)
+
+    return sphere1, sphere2, colors
+
+date_str = '26-02-24'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
