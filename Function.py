@@ -53,7 +53,7 @@ class PLeakyReLU(torch.nn.Module):
     def forward(self, x):
         # 强制 weight 在 (0, 1) 之间
         with torch.no_grad():
-            self.weight.clamp_(min=1e-6, max=1-1e-6)
+            self.weight.clamp_(min=1e-4, max=1-1e-4)
 
         if self.num_parameters == 1:
             return torch.where(x >= 0, x, self.weight * x)
