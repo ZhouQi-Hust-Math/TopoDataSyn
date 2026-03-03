@@ -286,7 +286,7 @@ def generate_thinSn_data(n_samples=1000, ambient_dim=3, radius=1.0, noise=0.0):
     sphere = torch.tensor(data, dtype=torch.float64)
     return sphere
 
-date_str = '26-03-04'
+date_str = '26-03-03'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
