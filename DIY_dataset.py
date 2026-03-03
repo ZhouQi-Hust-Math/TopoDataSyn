@@ -271,7 +271,22 @@ def make_thickSn_data(r1=3, r2=7, sndim=2, sizepara=21):
 
     return sphere1, sphere2, colors
 
-date_str = '26-02-24'
+
+def generate_thinSn_data(n_samples=1000, ambient_dim=3, radius=1.0, noise=0.0):
+    data = np.random.randn(n_samples, ambient_dim)
+    norms = np.linalg.norm(data, axis=1, keepdims=True)
+    data = data / norms
+    # Scale by radius
+    data *= radius
+
+    # Add noise if specified
+    if noise > 0:
+        data += np.random.normal(0, noise, data.shape)
+
+    sphere = torch.tensor(data, dtype=torch.float64)
+    return sphere
+
+date_str = '26-03-04'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
