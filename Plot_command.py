@@ -222,7 +222,7 @@ def Plot_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[
     for l in layer_show:
         a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
         show_index += 1
-        new_net = NN_model.Netpre()
+        new_net = NN_model.MLPpre()
         new_net.net1 = raw_net.net1[0: l+1]
 
         pic_data_hid = new_net(data_in).detach().numpy()
@@ -281,6 +281,7 @@ def Plot_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[
 
     for p in save_path:
         plt.savefig('%s' % p, bbox_inches='tight', pad_inches=0.3, dpi=600)
+
     plt.show()
 
 date_str = '26-03-04'

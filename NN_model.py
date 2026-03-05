@@ -5,9 +5,9 @@ import math
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
-class Net(torch.nn.Module):
+class MLP(torch.nn.Module):
     def __init__(self, width=2, depth=2, w_in=2, w_out=2, acf=torch.nn.ELU(), layer=None):
-        super(Net, self).__init__()
+        super(MLP, self).__init__()
         if layer is None:
             if not (isinstance(depth, int) and depth > 0):
                 warnings.warn('深度不是正整数')
@@ -53,9 +53,9 @@ class Net(torch.nn.Module):
         x = self.net2(x)
         return x
 
-class Netpre(Net):
+class MLPpre(MLP):
     def __init__(self, width=2, depth=2, w_in=2, w_out=2, acf=torch.nn.ELU(), layer=None):
-        super(Netpre, self).__init__(width=width, depth=depth, w_in=w_in, w_out=w_out, acf=acf, layer=layer)
+        super(MLPpre, self).__init__(width=width, depth=depth, w_in=w_in, w_out=w_out, acf=acf, layer=layer)
 
     def forward(self, x):
         x = self.net1(x)
