@@ -9,8 +9,6 @@ class MLP(torch.nn.Module):
     def __init__(self, width=2, depth=2, w_in=2, w_out=2, acf=torch.nn.ELU(), layer=None):
         super(MLP, self).__init__()
         if layer is None:
-            if not (isinstance(depth, int) and depth > 0):
-                warnings.warn('深度不是正整数')
             self.net1 = self._make_layer(width=width, depth=depth, w_in=w_in, acf=acf)
             self.net2 = torch.nn.Sequential(
                 torch.nn.Linear(width, w_out),
@@ -28,9 +26,10 @@ class MLP(torch.nn.Module):
 
 
     def _make_layer(self, width=2, depth=2, w_in=2, acf=torch.nn.ELU()):
-        if isinstance(acf, list):
+        layers = []
+        if isinstance(acf, list) and depth>0:
             layers = [torch.nn.Linear(w_in, width), acf[0]]
-        else:
+        elif depth>0:
             layers = [torch.nn.Linear(w_in, width), acf]
         for i in range(depth - 1):  # 创建额外的中间层
             layers.append(torch.nn.Linear(width, width))
@@ -136,7 +135,7 @@ def tensor_select_index(trainset=None, testset=None):
         print("数据筛选进度%.2f%%" % (100 * (i+1)/testset.size()[0]))
     return index_list
 
-date_str = '26-02-12'
+date_str = '26-03-06'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
