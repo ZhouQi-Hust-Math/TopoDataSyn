@@ -135,6 +135,48 @@ def tensor_select_index(trainset=None, testset=None):
         print("数据筛选进度%.2f%%" % (100 * (i+1)/testset.size()[0]))
     return index_list
 
+class basic_resblock(torch.nn.Module):
+    def __init__(self, downsample=None):
+        super(basic_resblock, self).__init__()
+        self.model = torch.nn.Sequential(
+        )
+        self.downsample = downsample
+
+    def forward(self, x):
+        res = x
+        result = self.model(x)
+        if self.downsample is not None:
+            res = self.downsample(x)
+        # 残差相加
+        result += res
+        # 最后还有一步relu
+        result = self.relu(result)
+        return result
+
+class Basic_ResNet(torch.nn.Module):
+    def __init__(self,layers=50):
+        super(Basic_ResNet, self).__init__()
+        # 进入block层
+        self.block1 = self.make_layers(self.layers_dic[layers][0], stride=1, planes=64)
+        self.block2 = self.make_layers(self.layers_dic[layers][1], stride=2, planes=128)
+        self.block3 = self.make_layers(self.layers_dic[layers][2], stride=2, planes=256)
+        self.block4 = self.make_layers(self.layers_dic[layers][1], stride=2, planes=512)
+
+        for m in self.modules():
+            def _make_layer(self, layers, stride, planes):
+                downsample = None
+                # 判断是否需要下采样
+                layers = []
+                layers.append(basic_resblock(self.in_planes, planes, stride, downsample))
+
+                return torch.nn.Sequential(*layers)  # 将列表解码
+
+            def forward(self, x):
+                for m in self.modules():
+                    x = m(x)
+                return x
+
+
 date_str = '26-03-06'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
