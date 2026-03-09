@@ -3,8 +3,6 @@ import warnings
 import time
 import math
 
-from torchvision.transforms.v2.functional import affine
-
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
 class MLP(torch.nn.Module):
@@ -18,6 +16,8 @@ class MLP(torch.nn.Module):
         self.net2 = torch.nn.Sequential(
             torch.nn.Linear(layer[-1], w_out),
         )
+        if batchnorm1d:
+            self.net2.append(torch.nn.BatchNorm1d(w_out, affine=False))
         print('逐层网络已创建, 宽度逐层为%s, 深度为%d, 激活函数列表为%s' % (layer, depth, acf))
         self.width = width
         self.depth = depth
@@ -130,59 +130,70 @@ def tensor_select_index(trainset=None, testset=None):
     return index_list
 
 class basic_resblock(torch.nn.Module):
-    def __init__(self, width=3, w_in=3, w_out=2, acf=torch.nn.ELU(), blocknum=1, blockdepth=2):
+    def __init__(self, width=3, acf=[torch.nn.ELU()], batchnorm1d=False):
         super(basic_resblock, self).__init__()
-        assert blocknum >= 0
-        if isinstance(acf, list):
-            self.acf=acf
-        else:
-            self.acf=[acf for i in range(blockdepth)]
-        self.model = self._make_layer(width=width, w_in=w_in, acf=self.acf[1:-1])
+        assert len(acf) >= 2
+        self.model1 = self._make_layer1(width=width, acf=acf[0:-1], batchnorm1d=batchnorm1d)
+        self.model2 = self._make_layer2(width=width, acf=acf[-1], batchnorm1d=batchnorm1d)
 
-    def _make_layer(self, width=3, w_in=2, acf=[torch.nn.ELU()], layer=None, batchnorm1d=False):
-        layers = [torch.nn.Linear(w_in, layer[0]), acf[0]]
+    def _make_layer1(self, width=2, acf=[torch.nn.ELU()], batchnorm1d=False):
+        layers = [torch.nn.Linear(width, width), acf[0]]
         if batchnorm1d:
-            layers.append(torch.nn.BatchNorm1d(layer[0], affine=False))
-        for i in range(len(layer) - 1):  # 创建额外的中间层
-            layers.append(torch.nn.Linear(layer[i], layer[i+1]))
-            layers.append(acf[i + 1])
-            if batchnorm1d:
-                layers.append(torch.nn.BatchNorm1d(layer[i+1], affine=False))
+            layers.append(torch.nn.BatchNorm1d(width, affine=False))
+        if len(acf)>=2:
+            for i in range(len(acf) - 1):  # 创建额外的中间层
+                layers.append(torch.nn.Linear(width, width))
+                layers.append(acf[i + 1])
+                if batchnorm1d:
+                    layers.append(torch.nn.BatchNorm1d(width, affine=False))
+        layers.append(torch.nn.Linear(width, width))
+        return torch.nn.Sequential(*layers)
+
+    def _make_layer2(self, width=2, acf=torch.nn.ELU(), batchnorm1d=False):
+        layers = [acf]
+        if batchnorm1d:
+            layers.append(torch.nn.BatchNorm1d(width, affine=False))
         return torch.nn.Sequential(*layers)
 
     def forward(self, x):
-        res = x
-        result = self.model(x)
+        down = x
+        result = self.model1(x)
         # 残差相加
-        result += res
-        result = self.acf[-1](result)
+        result += down
+        result = self.model2(x)
         return result
 
 class ResNet(torch.nn.Module):
-    def __init__(self, width=3, w_in=3, w_out=2, acf=torch.nn.ELU(), blocknum=1, blocksize=2):
+    def __init__(self, width=3, w_in=3, w_out=2, acf=[torch.nn.ELU()], blocknum=1, blockdepth=2, batchnorm1d=False):
         super(ResNet, self).__init__()
-        # 进入block层
-        self.net1 = self._make_layer(width=width, w_in=w_in, acf=acf)
+        if isinstance(acf, list):
+            acf=acf
+        else:
+            acf=[acf for k in range(1+blocknum*blockdepth)]
+        assert len(acf) == 1+blocknum*blockdepth
+        self.net1 = self._make_blocks(width=width, acf=acf, w_in=w_in, blocknum=blocknum, blockdepth=blockdepth,
+                                      batchnorm1d=batchnorm1d)
         self.net2 = torch.nn.Sequential(
             torch.nn.Linear(width, w_out),
         )
+        if batchnorm1d:
+            self.net2.append(torch.nn.BatchNorm1d(w_out, affine=False))
 
-        for m in self.modules():
-            def _make_layer(self, layers, stride, planes):
-                downsample = None
-                # 判断是否需要下采样
-                layers = []
-                layers.append(basic_resblock(self.in_planes, planes, stride, downsample))
+    def _make_blocks(self, width=3, w_in=3, acf=[torch.nn.ELU()], blocknum=1, blockdepth=2, batchnorm1d=False):
+        layers = [torch.nn.Linear(w_in, width), acf[0]]
+        if batchnorm1d:
+            layers.append(torch.nn.BatchNorm1d(width, affine=False))
+        for i in range(blocknum):
+            layers.append(basic_resblock(width=width, acf=acf[1+blockdepth * i : 1+blockdepth * (i+1)], batchnorm1d=batchnorm1d))
+        return torch.nn.Sequential(*layers)  # 将列表解码
 
-                return torch.nn.Sequential(*layers)  # 将列表解码
-
-        def forward(self, x):
-            x = self.net1(x)
-            x = self.net2(x)
-            return x
+    def forward(self, x):
+        x = self.net1(x)
+        x = self.net2(x)
+        return x
 
 
-date_str = '26-03-08'
+date_str = '26-03-09'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
