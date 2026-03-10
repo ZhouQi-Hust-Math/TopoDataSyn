@@ -129,12 +129,11 @@ def tensor_select_index(trainset=None, testset=None):
         print("数据筛选进度%.2f%%" % (100 * (i+1)/testset.size()[0]))
     return index_list
 
-class basic_resblock(torch.nn.Module):
+class building_resblock(torch.nn.Module):
     def __init__(self, width=3, acf=[torch.nn.ELU()], batchnorm1d=False):
-        super(basic_resblock, self).__init__()
+        super(building_resblock, self).__init__()
         assert len(acf) >= 2
-        self.model1 = self._make_layer1(width=width, acf=acf[0:-1], batchnorm1d=batchnorm1d)
-        self.model2 = self._make_layer2(width=width, acf=acf[-1], batchnorm1d=batchnorm1d)
+        self.model = self._make_layer1(width=width, acf=acf[0:-1], batchnorm1d=batchnorm1d)
 
     def _make_layer1(self, width=2, acf=[torch.nn.ELU()], batchnorm1d=False):
         layers = [torch.nn.Linear(width, width), acf[0]]
@@ -157,10 +156,9 @@ class basic_resblock(torch.nn.Module):
 
     def forward(self, x):
         down = x
-        result = self.model1(x)
+        result = self.model(x)
         # 残差相加
         result += down
-        result = self.model2(x)
         return result
 
 class ResNet(torch.nn.Module):
@@ -184,7 +182,7 @@ class ResNet(torch.nn.Module):
         if batchnorm1d:
             layers.append(torch.nn.BatchNorm1d(width, affine=False))
         for i in range(blocknum):
-            layers.append(basic_resblock(width=width, acf=acf[1+blockdepth * i : 1+blockdepth * (i+1)], batchnorm1d=batchnorm1d))
+            layers.append(building_resblock(width=width, acf=acf[1+blockdepth * i : 1+blockdepth * (i+1)], batchnorm1d=batchnorm1d))
         return torch.nn.Sequential(*layers)  # 将列表解码
 
     def forward(self, x):
