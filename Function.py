@@ -32,6 +32,7 @@ class PELU(torch.nn.Module):
             shape = [1, self.num_parameters] + [1] * (x.dim() - 2)
             return torch.where(x >= 0, x, self.weight.view(*shape) * (torch.exp(x) - 1))
 
+
 class PLeakyReLU(torch.nn.Module):
     def __init__(
             self, num_parameters: int = 1, init: float = 1.0, device=None, dtype=None
