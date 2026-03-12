@@ -104,7 +104,7 @@ def Plot_mesh(net, mesh1, mesh2, linecolor='k', linewidth=0.5):
             plt.plot([P1[0], P2[0]], [P1[1], P2[1]], [P1[2], P2[2]], c=linecolor)
 
 
-def Plot_NN(figdata=None, figcolor=None, save_path=['./test.png']):
+def Plot_MLP_NN(figdata=None, figcolor=None, save_path=['./test.png']):
     """
     Datatype:
     figdata -> list of torch.tensor
@@ -182,7 +182,7 @@ def Plot_NN(figdata=None, figcolor=None, save_path=['./test.png']):
     plt.show()
 
 
-def Plot_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)],
+def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)],
                 *, axis_visible = False, cmap='viridis',
                 dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]]):
     # 如果是1维线性数据，则扩容成2维
@@ -284,7 +284,7 @@ def Plot_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[
 
     plt.show()
 
-def Plot_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)],
+def Plot_MLP_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)],
                 *, axis_visible = False, cmap='viridis',
                 dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]]):
     if data_in.size()[1] == 1:
@@ -357,7 +357,7 @@ def Plot_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_p
 
     plt.show()
 
-date_str = '26-03-06'
+date_str = '26-03-12'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
