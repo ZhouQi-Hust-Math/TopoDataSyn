@@ -1,7 +1,7 @@
 import torch
-import warnings
 import time
 import math
+import numpy as np
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
@@ -191,8 +191,51 @@ class ResNet(torch.nn.Module):
         x = self.net2(x)
         return x
 
+def Net_train(Net, train_loader, temp_loss=np.inf, device='cpu', loss_fn=torch.nn.MSELoss(reduction='mean'), maxepoch=10,
+              iteration = 2000000, frameduration = 1000, eps=5e-5, printstr='-', modelsavepath='-'):
+    Net.to(device)
+    start_time = time.time()
+    for epoch in range(maxepoch):
+        learn_rate = 1e-4 - epoch * 0.5e-5
+        opt_s = torch.optim.Adam(params=Net.parameters(), lr=learn_rate)
+        for idx, (Input, output) in enumerate(train_loader):  # 对数据集分批读取
+            Input = Input.to(device)
+            output = output.to(device)
+            for t in range(iteration):
+                if (t + 1) % frameduration == 0:
+                    opt_s.zero_grad()
+                    LOSS = loss_fn(Net(Input), output)
+                    LOSS.backward()
+                    opt_s.step()
+                    record_time = time.time()
+                    remain_time = (record_time - start_time) * (
+                            maxepoch * iteration - epoch * iteration - t - 1) / (epoch * iteration + t + 1)
+                    m, s = divmod(remain_time, 60)
+                    h, m = divmod(m, 60)
+                    print(printstr, 't=', epoch * iteration + t + 1, 'loss=', LOSS.item(), 'lr=', learn_rate,
+                          '进度%.2f%%' % (100 * (epoch * iteration + t + 1) / (maxepoch * iteration)),
+                          '预计剩余时间%d小时%d分%.0f秒' % (h, m, s))
 
-date_str = '26-03-11'
+                else:
+                    opt_s.zero_grad()
+                    LOSS = loss_fn(Net(Input), output)
+                    LOSS.backward()
+                    opt_s.step()
+        LOSS = loss_fn(Net(Input), output)
+        if LOSS.item() <= temp_loss:
+            net_para = {'net': Net.state_dict()}
+            torch.save(net_para, modelsavepath)
+            print('当前loss为最优，loss=', LOSS.item(), '已临时储存网络配置')
+            temp_loss = LOSS.item()
+        elif LOSS.item() > temp_loss:
+            print('当前loss较差，loss=', LOSS.item(), '最优loss=', temp_loss)
+
+        if LOSS.item() > eps * (maxepoch - epoch) or LOSS.item() < eps:
+            break
+
+    return Net, LOSS, temp_loss
+
+date_str = '26-03-18'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
