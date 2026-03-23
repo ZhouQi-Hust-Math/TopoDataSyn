@@ -54,37 +54,6 @@ class MLPpre(MLP):
         return x
 
 
-def retrain(model=None, dataloader=None, lr=1e-4, newpath=None, device='cuda:0', iteration=1000000, frameduration=1000):
-    model.to(device)
-    start_time = time.time()
-    opt_s = torch.optim.Adam(params=model.parameters(), lr=lr)
-    loss = torch.nn.MSELoss(reduction='mean')
-
-    for idx, (Input, output) in enumerate(dataloader):  # 对数据集分批读取
-        Input = Input.to(device)
-        output = output.to(device)
-        for t in range(iteration):
-            if (t + 1) % frameduration == 0:
-                opt_s.zero_grad()
-                LOSS = loss(model(Input), output)
-                LOSS.backward()
-                opt_s.step()
-                record_time = time.time()
-                remain_time = (record_time - start_time) * (iteration - t - 1) / (t + 1)
-                m, s = divmod(remain_time, 60)
-                h, m = divmod(m, 60)
-                print('迭代次数', t + 1, '进度%.2f%%' % (100 * (t+1)/iteration), 'loss=', LOSS.item(), 'lr=', lr,
-                      '预计剩余时间%d小时%d分%.0f秒' % (h, m, s))
-            else:
-                opt_s.zero_grad()
-                LOSS = loss(model(Input), output)
-                LOSS.backward()
-                opt_s.step()
-    net_para = {'net': model.state_dict()}
-    print('新模型参数已保存至%s' % newpath)
-    torch.save(net_para, '%s' % newpath)
-
-
 def tensor_select_index(trainset=None, testset=None):
     index_list = []
     _, indices = torch.sort(trainset[:, 0], dim=0, descending=False)
@@ -158,7 +127,7 @@ class building_resblock(torch.nn.Module):
         return result
 
 class ResNet(torch.nn.Module):
-    def __init__(self, width=3, w_in=3, w_out=2, acf=[torch.nn.ELU()], blocknum=1, blockwidth=1, blockdepth=2, batchnorm1d=False):
+    def __init__(self, width=3, w_in=3, w_out=2, acf=[torch.nn.ELU()], blocknum=1, blockwidth=1, blockdepth=2, affine_layer=True, batchnorm1d=False):
         super(ResNet, self).__init__()
         if isinstance(acf, list):
             acf=acf
@@ -169,19 +138,19 @@ class ResNet(torch.nn.Module):
             torch.nn.Linear(w_in, width),
         )
         self.blocks = self._make_layer(width=width, acf=acf, blockwidth=blockwidth, blocknum=blocknum, blockdepth=blockdepth,
-                                       batchnorm1d=batchnorm1d)
+                                       affine_layer=affine_layer, batchnorm1d=batchnorm1d)
         self.net2 = torch.nn.Sequential(
             torch.nn.Linear(width, w_out),
         )
         if batchnorm1d:
             self.net2.append(torch.nn.BatchNorm1d(w_out, affine=False))
 
-    def _make_layer(self, width=3, acf=[torch.nn.ELU()], blocknum=1, blockwidth=1, blockdepth=2, batchnorm1d=False):
+    def _make_layer(self, width=3, acf=[torch.nn.ELU()], blocknum=1, blockwidth=1, blockdepth=2, affine_layer=True, batchnorm1d=False):
         layers = []
         for i in range(blocknum):
             layers.append(building_resblock(width=width, blockwidth=blockwidth,
                                             acf=acf[blockdepth * i : blockdepth * (i+1)], batchnorm1d=batchnorm1d))
-            if i != blocknum-1:
+            if affine_layer and i != blocknum-1:
                 layers.append(torch.nn.Linear(width, width))
         return torch.nn.Sequential(*layers)  # 将列表解码
 
@@ -190,6 +159,7 @@ class ResNet(torch.nn.Module):
         x = self.blocks(x)
         x = self.net2(x)
         return x
+
 
 def Net_train(Net, train_loader, temp_loss=np.inf, device='cpu', loss_fn=torch.nn.MSELoss(reduction='mean'), maxepoch=10,
               iteration = 2000000, frameduration = 1000, eps=5e-5, printstr='-', modelsavepath='-'):
@@ -235,7 +205,7 @@ def Net_train(Net, train_loader, temp_loss=np.inf, device='cpu', loss_fn=torch.n
 
     return Net, LOSS, temp_loss
 
-date_str = '26-03-18'
+date_str = '26-03-23'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
