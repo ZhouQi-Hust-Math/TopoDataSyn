@@ -88,7 +88,7 @@ def make_belt_data(r1=3, r2=7, sizepara=101, inner=False, sizepara2=51):
         for x0 in list(np.linspace(-r1, r1, sizepara2)):
             for y0 in list(np.linspace(-r1, r1, sizepara2)):
                 r = np.sqrt(x0 ** 2 + y0 ** 2)
-                if 0 <= r <= r1:
+                if 0 < r <= r1:
                     theta = np.angle(complex(x0, y0))
                     x1 = np.concatenate((x1, np.array([[r * np.cos(theta)]])), axis=0)
                     y1 = np.concatenate((y1, np.array([[r * np.sin(theta)]])), axis=0)
@@ -239,23 +239,29 @@ def make_swissroll_data(radiusrange=2, thetapara=np.pi, height=1, sizepara=None,
     print('数据集已生成，大小为%d乘%d' % (sizepara[0], sizepara[1]))
     return put, output, colors
 
-def make_thickSn_data(r1=3, r2=7, sndim=2, sizepara=21):
+def make_thickSn_data(r1=3.0, r2=7.0, sndim=2, sizepara=21, inner=False):
+    # sndim是流形维数，不是环境维数
     assert r1<=r2
     axisdata = np.linspace(start=-r2, stop=r2, endpoint=True, num=sizepara)
     data_raw = axisdata.reshape((sizepara, 1))
     for i in range(1, sndim+1):
-        data_temp1 = axisdata[0] * np.ones((np.pow(sizepara, i), 1))
+        data_temp1 = axisdata[0] * np.ones((np.power(sizepara, i), 1))
         data_temp_new = np.concatenate((data_temp1, data_raw), axis=1)
         for j in axisdata[1:]:
-            data_temp1 = j * np.ones((np.pow(sizepara, i), 1))
+            data_temp1 = j * np.ones((np.power(sizepara, i), 1))
             data_temp2 = np.concatenate((data_temp1, data_raw), axis=1)
             data_temp_new = np.concatenate((data_temp_new, data_temp2), axis=0)
         data_raw = data_temp_new.copy()
     data_sphere = np.ones((1, sndim+1))
     for k in range(np.size(data_raw, 0)):
-        print('data_sphere创建进度：%d/%d' % (k+1, np.pow(sizepara, sndim+1)))
-        if r1 <= np.linalg.norm(data_raw[k, :], ord=2) <= r2:
-            data_sphere = np.vstack((data_sphere, data_raw[k, :]))
+        if k % 100 == 0:
+            print('data_sphere创建进度：%d/%d' % (k+1, np.power(sizepara, sndim+1)))
+        if inner:
+            if 0 <= np.linalg.norm(data_raw[k, :], ord=2) <= r2:
+                data_sphere = np.vstack((data_sphere, data_raw[k, :]))
+        else:
+            if r1 < np.linalg.norm(data_raw[k, :], ord=2) <= r2:
+                data_sphere = np.vstack((data_sphere, data_raw[k, :]))
     data_sphere = np.delete(data_sphere, 0, axis=0)
     data_sphere_reverse = np.copy(data_sphere)
 
@@ -263,7 +269,11 @@ def make_thickSn_data(r1=3, r2=7, sndim=2, sizepara=21):
     for m in range(np.size(data_sphere_reverse, 0)):
         r = np.linalg.norm(data_sphere[m, :], ord=2)
         colors.append(r)
-        data_sphere_reverse[m, :] = data_sphere_reverse[m, :] * (r1+r2-r) / r
+        if r < 1e-15:
+            # Avoid division by zero at the origin if inner=True
+            data_sphere_reverse[m, :] = data_sphere_reverse[m, :] * (r1 + r2 - r) / 1e-15
+        else:
+            data_sphere_reverse[m, :] = data_sphere_reverse[m, :] * (r1+r2-r) / r
     colors = np.array(colors)
 
     sphere1 = torch.tensor(data_sphere, dtype=torch.float64)
@@ -286,7 +296,7 @@ def generate_thinSn_data(n_samples=1000, ambient_dim=3, radius=1.0, noise=0.0):
     sphere = torch.tensor(data, dtype=torch.float64)
     return sphere
 
-date_str = '26-03-04'
+date_str = '26-03-26'
 if __name__ == '__main__':
     print('最新更改日期：%s' % date_str)
     print('作者：周琦')
