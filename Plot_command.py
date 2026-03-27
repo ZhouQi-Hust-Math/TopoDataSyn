@@ -7,6 +7,13 @@ import TopoDataSyn.NN_model as NN_model
 from itertools import islice
 from collections import OrderedDict
 
+class version_info:
+    def __init__(self):
+        self.__revised_timestr = '260327-11:09'
+
+    def get_timeversion(self):
+        return self.__revised_timestr
+
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
 def axis_visualize(ax, axisnum=2, linewidth=3, linestyle='-'):
@@ -357,11 +364,11 @@ def Plot_MLP_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], sa
 
     plt.show()
 
-date_str = '26-03-12'
+
 if __name__ == '__main__':
-    print('最新更改日期：%s' % date_str)
+    print('最新更改日期：%s' % version_info().get_timeversion())
     print('作者：周琦')
     print('联系方式：2517036487@qq.com')
 else:
-    print('已导入模型', __name__, '最新更改日期:', date_str)
+    print('已导入模型', __name__, '最新更改日期:', version_info().get_timeversion())
 

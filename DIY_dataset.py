@@ -5,6 +5,12 @@ import math
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
+class version_info:
+    def __init__(self):
+        self.__revised_timestr = '260327-11:09'
+
+    def get_timeversion(self):
+        return self.__revised_timestr
 
 def make_disk_data(twist=2, sizepara=41):
     x1 = np.array([[0]])
@@ -296,10 +302,10 @@ def generate_thinSn_data(n_samples=1000, ambient_dim=3, radius=1.0, noise=0.0):
     sphere = torch.tensor(data, dtype=torch.float64)
     return sphere
 
-date_str = '26-03-26'
+
 if __name__ == '__main__':
-    print('最新更改日期：%s' % date_str)
+    print('最新更改时间版本：%s' % version_info().get_timeversion())
     print('作者：周琦')
     print('联系方式：2517036487@qq.com')
 else:
-    print('已导入数据集', __name__, '最新更改日期:', date_str)
+    print('已导入数据集', __name__, '最新更改时间版本:', version_info().get_timeversion())
