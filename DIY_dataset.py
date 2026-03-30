@@ -12,6 +12,7 @@ class version_info:
     def get_timeversion(self):
         return self.__revised_timestr
 
+
 def make_disk_data(twist=2, sizepara=41):
     x1 = np.array([[0]])
     y1 = np.array([[0]])
