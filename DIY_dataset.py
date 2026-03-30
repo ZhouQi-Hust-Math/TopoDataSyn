@@ -2,15 +2,14 @@ import warnings
 import numpy as np
 import torch
 import math
+from TopoDataSyn import version_register
+
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
-class version_info:
+class version_info(version_register):
     def __init__(self):
-        self.__revised_timestr = '260327-11:09'
-
-    def get_timeversion(self):
-        return self.__revised_timestr
+        super().__init__(timeversion='260330-21:56')
 
 
 def make_disk_data(twist=2, sizepara=41):
@@ -309,4 +308,4 @@ if __name__ == '__main__':
     print('作者：周琦')
     print('联系方式：2517036487@qq.com')
 else:
-    print('已导入数据集', __name__, '最新更改时间版本:', version_info().get_timeversion())
+    print('已导入数据集', __name__)

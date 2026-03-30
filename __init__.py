@@ -7,9 +7,37 @@ __all__ = [
 
 import TopoDataSyn
 from importlib import import_module
+import re
+from datetime import datetime
+
 
 # Please keep this list sorted
 assert __all__ == sorted(__all__)
+
+
+def is_valid_timestr(time_str: str) -> bool:
+    pattern = r"^\d{6}-\d{2}:\d{2}$"
+    if not re.match(pattern, time_str):
+        # "格式错误，应为 yymmdd-HH:MM"
+        raise ValueError(f"格式错误，应为 yymmdd-HH:MM: {time_str}")
+
+    try:
+        # "格式正确"
+        datetime.strptime(time_str, "%y%m%d-%H:%M")
+        return True
+
+    except ValueError:
+        # "不是合法的日期时间"
+        raise ValueError(f"不是合法的日期时间: {time_str}")
+
+
+class version_register:
+    def __init__(self, timeversion:str):
+        assert is_valid_timestr(timeversion)
+        self.__time_version = timeversion
+
+    def get_timeversion(self):
+        return self.__time_version
 
 
 def get_all_timeversions():
@@ -36,4 +64,15 @@ def get_all_timeversions():
 
     return results
 
-print(get_all_timeversions())
+
+def check_timeversion(input_time, time_dict:dict):
+    # 如果没有历史版本，默认认为它最大
+    is_valid_timestr(input_time)
+    if not time_dict:
+        return True, None, None
+
+    max_module = max(time_dict, key=time_dict.get)
+    max_time = time_dict[max_module]
+    return input_time > max_time, max_module, max_time
+
+

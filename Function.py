@@ -1,4 +1,9 @@
 import torch
+from TopoDataSyn import version_register
+
+class version_info(version_register):
+    def __init__(self):
+        super().__init__(timeversion='260330-21:56')
 
 # 自定义带可学习参数的激活函数 (已修正权重范围限制)
 class PELU(torch.nn.Module):

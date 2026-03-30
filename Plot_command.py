@@ -4,15 +4,12 @@ import matplotlib.pyplot as plt
 import imageio.v2 as imageio
 import warnings
 import TopoDataSyn.NN_model as NN_model
-from itertools import islice
-from collections import OrderedDict
+from TopoDataSyn import version_register
 
-class version_info:
+
+class version_info(version_register):
     def __init__(self):
-        self.__revised_timestr = '260327-11:09'
-
-    def get_timeversion(self):
-        return self.__revised_timestr
+        super().__init__(timeversion='260330-21:56')
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
@@ -473,5 +470,5 @@ if __name__ == '__main__':
     print('作者：周琦')
     print('联系方式：2517036487@qq.com')
 else:
-    print('已导入模型', __name__, '最新更改日期:', version_info().get_timeversion())
+    print('已导入模型', __name__)
 
