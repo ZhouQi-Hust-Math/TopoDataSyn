@@ -5,7 +5,7 @@ __all__ = [
     'Plot_command',
 ]
 
-import TopoDataSyn
+
 from importlib import import_module
 import re
 from datetime import datetime
@@ -42,9 +42,9 @@ class version_register:
 
 def get_all_timeversions():
     results = {}
-    for module_name in TopoDataSyn.__all__:
+    for module_name in __all__:
         try:
-            module = import_module(f"{TopoDataSyn.__name__}.{module_name}")
+            module = import_module(f"{__name__}.{module_name}")
 
             version_class = getattr(module, "version_info", None)
             if version_class is None:

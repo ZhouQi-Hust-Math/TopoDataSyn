@@ -138,8 +138,10 @@ class ResNet(torch.nn.Module):
         super(ResNet, self).__init__()
         if isinstance(acf, list):
             acf=acf
+            print(acf)
         else:
             acf=[acf for k in range(blocknum*blockdepth)]
+            print(acf)
         assert len(acf) == blocknum*blockdepth and blocknum>=1 and blockdepth>=1
         self.net1 = torch.nn.Sequential(
             torch.nn.Linear(w_in, width),

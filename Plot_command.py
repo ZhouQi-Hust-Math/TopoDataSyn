@@ -9,7 +9,7 @@ from TopoDataSyn import version_register
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260330-21:56')
+        super().__init__(timeversion='260401-19:30')
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
@@ -187,8 +187,8 @@ def Plot_NN(figdata=None, figcolor=None, save_path=['./test.png']):
 
 
 def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)],
-                *, axis_visible = False, cmap='viridis',
-                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]]):
+                *, axis_visible = False, cmap='viridis', figsize = (16, 10),
+                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]], axis_equal=True):
     # 如果是1维线性数据，则扩容成2维
     if data_in.size()[1] == 1:
         warnings.warn('input data is 1-dimensional')
@@ -196,7 +196,7 @@ def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_pa
     else:
         pic_data_in = data_in.detach().numpy()
 
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=figsize)
 
     if data_in.size()[1] >= 3:
         if data_in.size()[1] >= 4:
@@ -207,7 +207,8 @@ def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_pa
         ax_in = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (0, 0))
     ax_in.set_xlabel('x')
     ax_in.set_ylabel('y')
-    ax_in.set_aspect('equal')
+    if axis_equal:
+        ax_in.set_aspect('equal')
     ax_in.set_rasterized(True)  # 将此图层栅格化
     ax_in.set_title('INPUT')
     if data_in.size()[1] >= 3:
@@ -226,8 +227,8 @@ def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_pa
     for l in layer_show:
         a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
         show_index += 1
-        new_net = NN_model.MLPpre()
-        new_net.net1 = raw_net.net1[0: l+1]
+        new_net = raw_net.net1[0: l+1]
+        print(new_net)
 
         pic_data_hid = new_net(data_in).detach().numpy()
 
@@ -240,7 +241,8 @@ def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_pa
             ax_hid = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
         ax_hid.set_xlabel('x')
         ax_hid.set_ylabel('y')
-        ax_hid.set_aspect('equal')
+        if axis_equal:
+            ax_hid.set_aspect('equal')
         ax_hid.set_rasterized(True)  # 将此图层栅格化
 
         if pic_data_hid.shape[1] >= 3:
@@ -270,7 +272,8 @@ def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_pa
         ax_out = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
     ax_out.set_xlabel('x')
     ax_out.set_ylabel('y')
-    ax_out.set_aspect('equal')
+    if axis_equal:
+        ax_out.set_aspect('equal')
     ax_out.set_rasterized(True)  # 将此图层栅格化
     ax_out.set_title('OUTPUT')
 
@@ -325,12 +328,12 @@ def Plot_MLP_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], sa
     show_index = 1
 
     print("\033[92m请忽略下面中间步骤的创建网络过程\033[0m")
-    new_net = NN_model.MLPpre(depth=0)
+    new_net = torch.nn.Sequential()
     print(new_net)
     for l in layer_show:
         a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
         show_index += 1
-        new_net.net1.append(raw_net.net1[l])
+        new_net.append(raw_net.net1[l])
         print(new_net)
         pic_data_hid = new_net(data_in).detach().numpy()
 
@@ -363,8 +366,8 @@ def Plot_MLP_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], sa
 
 
 def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)],
-                *, axis_visible = False, cmap='viridis',
-                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]]):
+                *, axis_visible = False, cmap='viridis', figsize=(16, 10),
+                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]], axis_equal=True):
     # 如果是1维线性数据，则扩容成2维
     if data_in.size()[1] == 1:
         warnings.warn('input data is 1-dimensional')
@@ -372,7 +375,7 @@ def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save
     else:
         pic_data_in = data_in.detach().numpy()
 
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=figsize)
 
     if data_in.size()[1] >= 3:
         if data_in.size()[1] >= 4:
@@ -383,7 +386,8 @@ def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save
         ax_in = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (0, 0))
     ax_in.set_xlabel('x')
     ax_in.set_ylabel('y')
-    ax_in.set_aspect('equal')
+    if axis_equal:
+        ax_in.set_aspect('equal')
     ax_in.set_rasterized(True)  # 将此图层栅格化
     ax_in.set_title('INPUT')
     if data_in.size()[1] >= 3:
@@ -402,9 +406,10 @@ def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save
     for l in layer_show:
         a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
         show_index += 1
-        new_net = torch.nn.Sequential(*(list(seq1.children()) + list(seq2.children())))
-        new_net = raw_net.net1[0: l+1]
-
+        temp_net = torch.nn.Sequential(*(list(raw_net.net1.children()) + list(raw_net.blocks.children()) +
+                                         list(raw_net.net2.children())))
+        new_net = temp_net[0: l+1]
+        print(new_net)
         pic_data_hid = new_net(data_in).detach().numpy()
 
         if pic_data_hid.shape[1] >= 3:
@@ -416,7 +421,8 @@ def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save
             ax_hid = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
         ax_hid.set_xlabel('x')
         ax_hid.set_ylabel('y')
-        ax_hid.set_aspect('equal')
+        if axis_equal:
+            ax_hid.set_aspect('equal')
         ax_hid.set_rasterized(True)  # 将此图层栅格化
 
         if pic_data_hid.shape[1] >= 3:
@@ -446,7 +452,8 @@ def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save
         ax_out = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
     ax_out.set_xlabel('x')
     ax_out.set_ylabel('y')
-    ax_out.set_aspect('equal')
+    if axis_equal:
+        ax_out.set_aspect('equal')
     ax_out.set_rasterized(True)  # 将此图层栅格化
     ax_out.set_title('OUTPUT')
 
@@ -464,6 +471,81 @@ def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save
 
     plt.show()
 
+
+def Plot_ResNet_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)],
+                *, axis_visible = False, cmap='viridis',
+                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]]):
+    if data_in.size()[1] == 1:
+        warnings.warn('input data is 1-dimensional')
+        pic_data_in = torch.cat((data_in, torch.zeros(data_in.size()[0], 1)), dim=1).detach().numpy()
+    else:
+        pic_data_in = data_in.detach().numpy()
+
+    plt.figure(figsize=(16, 10))
+
+    if data_in.size()[1] >= 3:
+        if data_in.size()[1] >= 4:
+            warnings.warn("the dimension of input data is over 3, only the first 3 dimensions will be plotted")
+        ax_in = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (0, 0), projection='3d')
+        ax_in.set_zlabel('z')
+    else:
+        ax_in = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (0, 0))
+    ax_in.set_xlabel('x')
+    ax_in.set_ylabel('y')
+    ax_in.set_aspect('equal')
+    ax_in.set_rasterized(True)  # 将此图层栅格化
+    ax_in.set_title('INPUT')
+    if data_in.size()[1] >= 3:
+        ax_in.scatter(pic_data_in[:, dim_index[0][0]], pic_data_in[:, dim_index[0][1]], pic_data_in[:, dim_index[0][2]], s=0.5, c=figcolor, cmap=cmap)
+        if axis_visible:
+            axis_visualize(ax_in, 3)
+    else:
+        ax_in.scatter(pic_data_in[:, dim_index[0][0]], pic_data_in[:, dim_index[0][1]], s=0.5, c=figcolor, cmap=cmap)
+        if axis_visible:
+            axis_visualize(ax_in, 2)
+
+    assert 1 + len(layer_show) <= fig_row_col[0] * fig_row_col[1]
+
+    show_index = 1
+
+    print("\033[92m请忽略下面中间步骤的创建网络过程\033[0m")
+    new_net = torch.nn.Sequential()
+    temp_net = torch.nn.Sequential(*(list(raw_net.net1.children()) + list(raw_net.blocks.children()) +
+                                         list(raw_net.net2.children())))
+    print(new_net)
+    for l in layer_show:
+        a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
+        show_index += 1
+        new_net.append(raw_net.net1[l])
+        print(new_net)
+        pic_data_hid = new_net(data_in).detach().numpy()
+
+        if pic_data_hid.shape[1] >= 3:
+            if pic_data_hid.shape[1] >= 4:
+                warnings.warn("the dimension of hidden layer data is over 3, only the selected 3 dimensions will be plotted")
+            ax_hid = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b), projection='3d')
+            ax_hid.set_zlabel('z')
+        else:
+            ax_hid = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
+        ax_hid.set_xlabel('x')
+        ax_hid.set_ylabel('y')
+        ax_hid.set_aspect('equal')
+        ax_hid.set_rasterized(True)  # 将此图层栅格化
+
+        if pic_data_hid.shape[1] >= 3:
+            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]], s=0.5, c=figcolor, cmap=cmap)
+            if axis_visible:
+                axis_visualize(ax_hid, 3)
+        else:
+            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], s=0.5, c=figcolor, cmap=cmap)
+            if axis_visible:
+                axis_visualize(ax_hid, 2)
+
+
+    for p in save_path:
+        plt.savefig('%s' % p, bbox_inches='tight', pad_inches=0.3, dpi=600)
+
+    plt.show()
 
 if __name__ == '__main__':
     print('最新更改日期：%s' % version_info().get_timeversion())
