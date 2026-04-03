@@ -134,7 +134,7 @@ class building_resblock(torch.nn.Module):
         return result
 
 class ResNet(torch.nn.Module):
-    def __init__(self, width=3, w_in=3, w_out=2, acf=[torch.nn.ELU()], blocknum=1, blockwidth=1, blockdepth=2, affine_layer=True, batchnorm1d=False):
+    def __init__(self, width=3, w_in=3, w_out=2, acf=[torch.nn.ELU()], blocknum=1, blockwidth=1, blockdepth=2, affine_layer=False, batchnorm1d=False):
         super(ResNet, self).__init__()
         if isinstance(acf, list):
             acf=acf
