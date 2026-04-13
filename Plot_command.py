@@ -3,13 +3,12 @@ import torch
 import matplotlib.pyplot as plt
 import imageio.v2 as imageio
 import warnings
-import TopoDataSyn.NN_model as NN_model
 from TopoDataSyn import version_register
 
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260401-19:30')
+        super().__init__(timeversion='260413-20:47')
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
@@ -108,78 +107,46 @@ def Plot_mesh(net, mesh1, mesh2, linecolor='k', linewidth=0.5):
             plt.plot([P1[0], P2[0]], [P1[1], P2[1]], [P1[2], P2[2]], c=linecolor)
 
 
-def Plot_NN(figdata=None, figcolor=None, save_path=['./test.png']):
-    """
-    Datatype:
-    figdata -> list of torch.tensor
-    figcolor -> numpy.array
-    output_path -> list of strings
-    Return:
-    None
-    """
+def Plot_figdata(figdata=None, figcolor=None, save_path=['./test.png'], fig_row_col=[1, 3],
+                *, axis_visible = False, cmap='viridis', figsize = (16, 10),
+                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]], axis_equal=True):
+    # datatype: list of torch.tensor
+    assert len(figdata) <= fig_row_col[0] * fig_row_col[1]
+    plt.figure(figsize=figsize)
+    show_index = 0
+    for subfigdata in figdata:
+        a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
+        # 如果是1维线性数据，则扩容成2维
+        if subfigdata.size()[1] == 1:
+            warnings.warn('figdata is 1-dimensional')
+            subfigdata = torch.cat((subfigdata, torch.zeros(subfigdata.size()[0], 1)), dim=1)
 
-    figdata_in, figdata_out, figdata_test = figdata  # datatype: torch.tensor
-    # 如果是1维线性数据，则扩容成2维
-    if figdata_in.size()[1] == 1:
-        warnings.warn('input data is 1-dimensional')
-        figdata_in = torch.cat((figdata_in, torch.zeros(figdata_in.size()[0], 1)), dim=1)
-    if figdata_out.size()[1] == 1:
-        warnings.warn('output data is 1-dimensional')
-        figdata_out = torch.cat((figdata_out, torch.zeros(figdata_out.size()[0], 1)), dim=1)
-    if figdata_test.size()[1] == 1:
-        warnings.warn('test data is 1-dimensional')
-        figdata_test = torch.cat((figdata_test, torch.zeros(figdata_test.size()[0], 1)), dim=1)
+        if subfigdata.size()[1] >= 3:
+            if subfigdata.size()[1] >= 4:
+                warnings.warn("the dimension of figdata is over 3, only the first 3 dimensions will be plotted")
+            ax = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b), projection='3d')
+            ax.set_zlabel('z')
+        else:
+            ax = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
 
-    plt.figure(figsize=(16, 5))
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        if axis_equal:
+            ax.set_aspect('equal')
+        ax.set_rasterized(True)  # 将此图层栅格化
+        if subfigdata.size()[1] >= 3:
+            ax.scatter(subfigdata[:, dim_index[0][0]], subfigdata[:, dim_index[0][1]],
+                          subfigdata[:, dim_index[0][2]], s=0.5, c=figcolor, cmap=cmap)
+            if axis_visible:
+                axis_visualize(ax, 3)
+        else:
+            ax.scatter(subfigdata[:, dim_index[0][0]], subfigdata[:, dim_index[0][1]], s=0.5, c=figcolor,
+                          cmap=cmap)
+            if axis_visible:
+                axis_visualize(ax, 2)
 
-    if figdata_in.size()[1] >= 3:
-        if figdata_in.size()[1] >= 4:
-            warnings.warn("the dimension of input data is over 3, only the selected 3 dimensions will be plotted")
-        ax_in = plt.subplot2grid((1, 3), (0, 0), projection='3d')
-        ax_in.set_zlabel('z')
-    else:
-        ax_in = plt.subplot2grid((1, 3), (0, 0))
-    ax_in.set_xlabel('x')
-    ax_in.set_ylabel('y')
-    ax_in.set_aspect('equal')
-    ax_in.set_rasterized(True)  # 将此图层栅格化
-    if figdata_in.size()[1] >= 3:
-        ax_in.scatter(figdata_in[:, 0], figdata_in[:, 1], figdata_in[:, 2], s=0.5, c=figcolor, cmap=plt.cm.gist_rainbow)
-    else:
-        ax_in.scatter(figdata_in[:, 0], figdata_in[:, 1], s=0.5, c=figcolor, cmap=plt.cm.gist_rainbow)
+        show_index += 1
 
-    if figdata_out.size()[1] >= 3:
-        if figdata_out.size()[1] >= 4:
-            warnings.warn("the dimension of output data is over 3, only the first 3 dimensions will be plotted")
-        ax_out = plt.subplot2grid((1, 3), (0, 1), projection='3d')
-        ax_out.set_zlabel('z')
-    else:
-        ax_out = plt.subplot2grid((1, 3), (0, 1))
-    ax_out.set_xlabel('x')
-    ax_out.set_ylabel('y')
-    ax_out.set_aspect('equal')
-    ax_out.set_rasterized(True)  # 将此图层栅格化
-    if figdata_out.size()[1] >= 3:
-        ax_out.scatter(figdata_out[:, 0], figdata_out[:, 1], figdata_out[:, 2], s=0.5, c=figcolor, cmap=plt.cm.gist_rainbow)
-    else:
-        ax_out.scatter(figdata_out[:, 0], figdata_out[:, 1], s=0.5, c=figcolor, cmap=plt.cm.gist_rainbow)
-
-    if figdata_test.size()[1] >= 3:
-        if figdata_test.size()[1] >= 4:
-            warnings.warn("the dimension of test data is over 3, only the first 3 dimensions will be plotted")
-        ax_test = plt.subplot2grid((1, 3), (0, 2), projection='3d')
-        ax_test.set_zlabel('z')
-    else:
-        ax_test = plt.subplot2grid((1, 3), (0, 2))
-    ax_test.set_xlabel('x')
-    ax_test.set_ylabel('y')
-    ax_test.set_aspect('equal')
-    ax_test.set_rasterized(True)  # 将此图层栅格化
-    if figdata_test.size()[1] >= 3:
-        ax_test.scatter(figdata_test[:, 0], figdata_test[:, 1], figdata_test[:, 2], s=0.5, c=figcolor,
-                       cmap=plt.cm.gist_rainbow)
-    else:
-        ax_test.scatter(figdata_test[:, 0], figdata_test[:, 1], s=0.5, c=figcolor, cmap=plt.cm.gist_rainbow)
 
     for p in save_path:
         plt.savefig('%s' % p, bbox_inches='tight', pad_inches=0.3, dpi=600)
@@ -510,9 +477,8 @@ def Plot_ResNet_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4],
 
     print("\033[92m请忽略下面中间步骤的创建网络过程\033[0m")
     new_net = torch.nn.Sequential()
-    temp_net = torch.nn.Sequential(*(list(raw_net.net1.children()) + list(raw_net.blocks.children()) +
-                                         list(raw_net.net2.children())))
     print(new_net)
+
     for l in layer_show:
         a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
         show_index += 1
@@ -546,6 +512,29 @@ def Plot_ResNet_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4],
         plt.savefig('%s' % p, bbox_inches='tight', pad_inches=0.3, dpi=600)
 
     plt.show()
+
+
+def Plot_ResNet_noskiplayers(raw_net, data_in, figcolor=None, save_path=[], layer_show=[i for i in range(3)],
+                *, axis_visible = False, cmap='viridis', axis_equal=False,
+                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]]):
+    fig_row_col = [len(layer_show), 3]
+    pic_data = []
+    for l in layer_show:
+        net1 = torch.nn.Sequential()
+        net2 = torch.nn.Sequential()
+
+        net1.append(raw_net.net1)
+        net1.append(raw_net.blocks[0:l])
+        net2.append(raw_net.net1)
+        net2.append(raw_net.blocks[0:l+1])
+
+        pic_data.append(net1(data_in).detach())
+        pic_minus = net2(data_in) - net1(data_in)
+        pic_data.append(pic_minus.detach())
+        pic_data.append(net2(data_in).detach())
+
+    Plot_figdata(figdata=pic_data, figcolor=figcolor, fig_row_col=fig_row_col, save_path=save_path, axis_visible=axis_visible, cmap=cmap, dim_index=dim_index, axis_equal=axis_equal)
+
 
 if __name__ == '__main__':
     print('最新更改日期：%s' % version_info().get_timeversion())
