@@ -7,7 +7,7 @@ from TopoDataSyn import version_register
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260330-21:56')
+        super().__init__(timeversion='260415-10:28')
 
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
@@ -167,6 +167,16 @@ class ResNet(torch.nn.Module):
         x = self.net1(x)
         x = self.blocks(x)
         x = self.net2(x)
+        return x
+
+
+class HomoResNet(ResNet):
+    def __init__(self, width=3, w_in=3, w_out=2, acf=[torch.nn.ELU()], blocknum=1, blockwidth=1, blockdepth=2, affine_layer=False, batchnorm1d=False):
+        super(HomoResNet, self).__init__(width=width, w_in=w_in, w_out=w_out, acf=acf, blocknum=blocknum, blockwidth=blockwidth,
+                                         blockdepth=blockdepth, affine_layer=affine_layer, batchnorm1d=batchnorm1d)
+
+    def forward(self, x):
+        x = self.blocks(x)
         return x
 
 
