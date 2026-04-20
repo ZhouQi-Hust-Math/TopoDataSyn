@@ -303,6 +303,48 @@ def generate_thinSn_data(n_samples=1000, ambient_dim=3, radius=1.0, noise=0.0):
     return sphere
 
 
+def make_SmaleSphere_data(r1=3.0, r2=7.0, sndim=2, sizepara=21, inner=False):
+    # sndim是流形维数，不是环境维数
+    assert r1<=r2
+    axisdata = np.linspace(start=-r2, stop=r2, endpoint=True, num=sizepara)
+    data_raw = axisdata.reshape((sizepara, 1))
+    for i in range(1, sndim+1):
+        data_temp1 = axisdata[0] * np.ones((np.power(sizepara, i), 1))
+        data_temp_new = np.concatenate((data_temp1, data_raw), axis=1)
+        for j in axisdata[1:]:
+            data_temp1 = j * np.ones((np.power(sizepara, i), 1))
+            data_temp2 = np.concatenate((data_temp1, data_raw), axis=1)
+            data_temp_new = np.concatenate((data_temp_new, data_temp2), axis=0)
+        data_raw = data_temp_new.copy()
+    data_sphere = np.ones((1, sndim+1))
+    for k in range(np.size(data_raw, 0)):
+        if k % 100 == 0:
+            print('data_sphere创建进度：%d/%d' % (k+1, np.power(sizepara, sndim+1)))
+        if inner:
+            if 0 <= np.linalg.norm(data_raw[k, :], ord=2) <= r2:
+                data_sphere = np.vstack((data_sphere, data_raw[k, :]))
+        else:
+            if r1 < np.linalg.norm(data_raw[k, :], ord=2) <= r2:
+                data_sphere = np.vstack((data_sphere, data_raw[k, :]))
+    data_sphere = np.delete(data_sphere, 0, axis=0)
+    data_sphere_reverse = np.copy(data_sphere)
+
+    colors = []
+    for m in range(np.size(data_sphere_reverse, 0)):
+        r = np.linalg.norm(data_sphere[m, :], ord=2)
+        colors.append(r)
+        if r < 1e-15:
+            # Avoid division by zero at the origin if inner=True
+            data_sphere_reverse[m, :] = -data_sphere_reverse[m, :] * (r1 + r2 - r) / 1e-15
+        else:
+            data_sphere_reverse[m, :] = -data_sphere_reverse[m, :] * (r1+r2-r) / r
+    colors = np.array(colors)
+
+    sphere1 = torch.tensor(data_sphere, dtype=torch.float64)
+    sphere2 = torch.tensor(data_sphere_reverse, dtype=torch.float64)
+
+    return sphere1, sphere2, colors
+
 if __name__ == '__main__':
     print('最新更改时间版本：%s' % version_info().get_timeversion())
     print('作者：周琦')
