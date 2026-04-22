@@ -70,8 +70,8 @@ class PLeakyReLU(torch.nn.Module):
             return torch.where(x >= 0, x, self.weight.view(*shape) * x)
 
 
-class WeightConstraint_Loss(torch.nn.Module):
-    def __init__(self, model, det_weight:float=100.0, margin:float=1e-4):
+class WeightConstraint_MLP_Loss(torch.nn.Module):
+    def __init__(self, model, width=3, det_weight:float=100.0, margin:float=1e-4):
         """
         model: 传入你的 MLP 模型实例
         det_weight: 行列式惩罚项的权重系数，越大则约束越硬
@@ -81,11 +81,15 @@ class WeightConstraint_Loss(torch.nn.Module):
         # criterion = CustomConstrainedLoss(net, det_weight=0.1)
         # loss = criterion(net(PUT), TARGET)
         """
-        super(WeightConstraint_Loss, self).__init__()
+        super(WeightConstraint_MLP_Loss, self).__init__()
         self.model = model
+        self.width = width
         self.det_weight = det_weight
         self.margin = margin
         self.mse_fn = torch.nn.MSELoss()
+        print(self.model.net1[0].weight.shape)
+        assert self.width <= self.model.net1[0].weight.shape[0] and self.width <= self.model.net1[0].weight.shape[1]
+        assert self.width <= self.model.net2[0].weight.shape[0] and self.width <= self.model.net2[0].weight.shape[1]
     def forward(self, output, target):
         # 1. 计算基本的 MSE 误差
         mse_loss = self.mse_fn(output, target)
@@ -97,18 +101,12 @@ class WeightConstraint_Loss(torch.nn.Module):
         # 遍历 net.net1 中的所有子模块
         for name, layer in self.model.net1.named_children():
             if isinstance(layer, torch.nn.Linear):
-                W = layer.weight
-                # 检查是否为方阵 (rows == cols)
-                if W.shape[0] == W.shape[1]:
-                    # 计算行列式
-                    d = torch.linalg.det(W)
-                    # 惩罚项：如果 d < margin，则产生惩罚
-                    # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
-                    det_penalty += torch.relu(self.margin - d)
-                else:
-                    # 如果不是方阵，行列式无定义
-                    # 可选择跳过，或者针对长方形矩阵约束其奇异值的乘积（广义行列式）
-                    pass
+                W = layer.weight[0:self.width, 0:self.width]
+                d = torch.linalg.det(W)
+                # 惩罚项：如果 d < margin，则产生惩罚
+                # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
+                det_penalty += torch.relu(self.margin - d)
+
         
         # 总损失 = MSE + lambda * Penalty
         total_loss = mse_loss + self.det_weight * det_penalty
