@@ -8,7 +8,7 @@ from TopoDataSyn import version_register
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260413-20:47')
+        super().__init__(timeversion='260424-23:16')
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
@@ -213,7 +213,8 @@ def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_pa
         ax_hid.set_rasterized(True)  # 将此图层栅格化
 
         if pic_data_hid.shape[1] >= 3:
-            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]], s=0.5, c=figcolor, cmap=cmap)
+            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]],
+                           s=0.5, c=figcolor, cmap=cmap)
             if axis_visible:
                 axis_visualize(ax_hid, 3)
         else:
@@ -245,7 +246,8 @@ def Plot_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_pa
     ax_out.set_title('OUTPUT')
 
     if pic_data_out.shape[1] >= 3:
-        ax_out.scatter(pic_data_out[:, dim_index[2][0]], pic_data_out[:, dim_index[2][1]], pic_data_out[:, dim_index[2][2]], s=0.5, c=figcolor, cmap=cmap)
+        ax_out.scatter(pic_data_out[:, dim_index[2][0]], pic_data_out[:, dim_index[2][1]], pic_data_out[:, dim_index[2][2]],
+                       s=0.5, c=figcolor, cmap=cmap)
         if axis_visible:
             axis_visualize(ax_out, 3)
     else:
@@ -317,7 +319,8 @@ def Plot_MLP_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], sa
         ax_hid.set_rasterized(True)  # 将此图层栅格化
 
         if pic_data_hid.shape[1] >= 3:
-            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]], s=0.5, c=figcolor, cmap=cmap)
+            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]],
+                           s=0.5, c=figcolor, cmap=cmap)
             if axis_visible:
                 axis_visualize(ax_hid, 3)
         else:
@@ -393,7 +396,8 @@ def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save
         ax_hid.set_rasterized(True)  # 将此图层栅格化
 
         if pic_data_hid.shape[1] >= 3:
-            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]], s=0.5, c=figcolor, cmap=cmap)
+            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]],
+                           s=0.5, c=figcolor, cmap=cmap)
             if axis_visible:
                 axis_visualize(ax_hid, 3)
         else:
@@ -425,7 +429,8 @@ def Plot_ResNet_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save
     ax_out.set_title('OUTPUT')
 
     if pic_data_out.shape[1] >= 3:
-        ax_out.scatter(pic_data_out[:, dim_index[2][0]], pic_data_out[:, dim_index[2][1]], pic_data_out[:, dim_index[2][2]], s=0.5, c=figcolor, cmap=cmap)
+        ax_out.scatter(pic_data_out[:, dim_index[2][0]], pic_data_out[:, dim_index[2][1]], pic_data_out[:, dim_index[2][2]],
+                       s=0.5, c=figcolor, cmap=cmap)
         if axis_visible:
             axis_visualize(ax_out, 3)
     else:
@@ -499,7 +504,8 @@ def Plot_ResNet_singlelayer(raw_net, data_in, figcolor=None, fig_row_col=[2, 4],
         ax_hid.set_rasterized(True)  # 将此图层栅格化
 
         if pic_data_hid.shape[1] >= 3:
-            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]], s=0.5, c=figcolor, cmap=cmap)
+            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]],
+                           s=0.5, c=figcolor, cmap=cmap)
             if axis_visible:
                 axis_visualize(ax_hid, 3)
         else:
@@ -533,8 +539,116 @@ def Plot_ResNet_noskiplayers(raw_net, data_in, figcolor=None, save_path=[], laye
         pic_data.append(pic_minus.detach())
         pic_data.append(net2(data_in).detach())
 
-    Plot_figdata(figdata=pic_data, figcolor=figcolor, fig_row_col=fig_row_col, save_path=save_path, axis_visible=axis_visible, cmap=cmap, dim_index=dim_index, axis_equal=axis_equal)
+    Plot_figdata(figdata=pic_data, figcolor=figcolor, fig_row_col=fig_row_col, save_path=save_path, axis_visible=axis_visible, cmap=cmap,
+                 dim_index=dim_index, axis_equal=axis_equal)
 
+
+def Plot_Smale_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)], frame=False,
+                *, axis_visible = False, cmap='viridis', figsize = (16, 10),
+                dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]], axis_equal=True):
+    # 如果是1维线性数据，则扩容成2维
+    if data_in.size()[1] == 1:
+        warnings.warn('input data is 1-dimensional')
+        pic_data_in = torch.cat((data_in, torch.zeros(data_in.size()[0], 1)), dim=1).detach().numpy()
+    else:
+        pic_data_in = data_in.detach().numpy()
+
+    plt.figure(figsize=figsize)
+
+    if data_in.size()[1] >= 3:
+        if data_in.size()[1] >= 4:
+            warnings.warn("the dimension of input data is over 3, only the first 3 dimensions will be plotted")
+        ax_in = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (0, 0), projection='3d')
+        ax_in.set_zlabel('z')
+    else:
+        ax_in = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (0, 0))
+    ax_in.set_xlabel('x')
+    ax_in.set_ylabel('y')
+    if axis_equal:
+        ax_in.set_aspect('equal')
+    ax_in.set_rasterized(True)  # 将此图层栅格化
+    ax_in.set_title('INPUT')
+    if data_in.size()[1] >= 3:
+        ax_in.scatter(pic_data_in[:, dim_index[0][0]], pic_data_in[:, dim_index[0][1]], pic_data_in[:, dim_index[0][2]], s=0.5, c=figcolor, cmap=cmap)
+        if axis_visible:
+            axis_visualize(ax_in, 3)
+    else:
+        ax_in.scatter(pic_data_in[:, dim_index[0][0]], pic_data_in[:, dim_index[0][1]], s=0.5, c=figcolor, cmap=cmap)
+        if axis_visible:
+            axis_visualize(ax_in, 2)
+
+    assert 2 + len(layer_show) <= fig_row_col[0] * fig_row_col[1]
+
+    show_index = 1
+    print("\033[92m请忽略下面中间步骤的创建网络过程\033[0m")
+    for l in layer_show:
+        a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
+        show_index += 1
+        new_net = raw_net.net1[0: l+1]
+        print(new_net)
+
+        pic_data_hid = new_net(data_in).detach().numpy()
+
+        if pic_data_in.shape[1] >= 3:
+            if pic_data_in.shape[1] >= 4:
+                warnings.warn("the dimension of hidden layer data is over 3, only the selected 3 dimensions will be plotted")
+            ax_hid = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b), projection='3d')
+            ax_hid.set_zlabel('z')
+        else:
+            ax_hid = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
+        ax_hid.set_xlabel('x')
+        ax_hid.set_ylabel('y')
+        if axis_equal:
+            ax_hid.set_aspect('equal')
+        ax_hid.set_rasterized(True)  # 将此图层栅格化
+
+        if pic_data_in.shape[1] >= 3:
+            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], pic_data_hid[:, dim_index[1][2]],
+                           s=0.5, c=figcolor, cmap=cmap)
+            if axis_visible:
+                axis_visualize(ax_hid, 3)
+        else:
+            ax_hid.scatter(pic_data_hid[:, dim_index[1][0]], pic_data_hid[:, dim_index[1][1]], s=0.5, c=figcolor, cmap=cmap)
+            if axis_visible:
+                axis_visualize(ax_hid, 2)
+
+    pic_data_out = raw_net(data_in)
+    if pic_data_out.shape[1] == 1:
+        warnings.warn('output data is 1-dimensional')
+        pic_data_out = torch.cat((pic_data_out, torch.zeros(pic_data_out.shape[0], 1)), dim=1).detach().numpy()
+    else:
+        pic_data_out = pic_data_out.detach().numpy()
+
+    a, b = show_index // fig_row_col[1], show_index % fig_row_col[1]
+    if pic_data_out.shape[1] >= 3:
+        if pic_data_out.shape[1] >= 4:
+            warnings.warn(
+                "the dimension of output data is over 3, only the selected 3 dimensions will be plotted")
+        ax_out = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b), projection='3d')
+        ax_out.set_zlabel('z')
+    else:
+        ax_out = plt.subplot2grid((fig_row_col[0], fig_row_col[1]), (a, b))
+    ax_out.set_xlabel('x')
+    ax_out.set_ylabel('y')
+    if axis_equal:
+        ax_out.set_aspect('equal')
+    ax_out.set_rasterized(True)  # 将此图层栅格化
+    ax_out.set_title('OUTPUT')
+
+    if pic_data_out.shape[1] >= 3:
+        ax_out.scatter(pic_data_out[:, dim_index[2][0]], pic_data_out[:, dim_index[2][1]], pic_data_out[:, dim_index[2][2]],
+                       s=0.5, c=figcolor, cmap=cmap)
+        if axis_visible:
+            axis_visualize(ax_out, 3)
+    else:
+        ax_out.scatter(pic_data_out[:, dim_index[2][0]], pic_data_out[:, dim_index[2][1]], s=0.5, c=figcolor, cmap=cmap)
+        if axis_visible:
+            axis_visualize(ax_out, 2)
+
+    for p in save_path:
+        plt.savefig('%s' % p, bbox_inches='tight', pad_inches=0.3, dpi=600)
+
+    plt.show()
 
 if __name__ == '__main__':
     print('最新更改日期：%s' % version_info().get_timeversion())

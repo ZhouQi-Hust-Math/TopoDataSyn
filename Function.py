@@ -3,7 +3,7 @@ from TopoDataSyn import version_register
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260330-21:56')
+        super().__init__(timeversion='260424-23:16')
 
 # 自定义带可学习参数的激活函数 (已修正权重范围限制)
 class PELU(torch.nn.Module):
@@ -107,6 +107,13 @@ class WeightConstraint_MLP_Loss(torch.nn.Module):
                 # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
                 det_penalty += torch.relu(self.margin - d)
 
+        for name, layer in self.model.net2.named_children():
+            if isinstance(layer, torch.nn.Linear):
+                W = layer.weight[0:self.width, 0:self.width]
+                d = torch.linalg.det(W)
+                # 惩罚项：如果 d < margin，则产生惩罚
+                # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
+                det_penalty += torch.relu(self.margin - d)
         
         # 总损失 = MSE + lambda * Penalty
         total_loss = mse_loss + self.det_weight * det_penalty
