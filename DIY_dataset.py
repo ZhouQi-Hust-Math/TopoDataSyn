@@ -9,7 +9,7 @@ torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260330-21:56')
+        super().__init__(timeversion='260426-12:20')
 
 
 def make_disk_data(twist=2, sizepara=41):
@@ -303,30 +303,24 @@ def generate_thinSn_data(n_samples=1000, ambient_dim=3, radius=1.0, noise=0.0):
     return sphere
 
 
-def make_SmaleSphere_data(r1=3.0, r2=7.0, sndim=2, sizepara=21, inner=False):
+def make_SmaleSphere_data(n_samples=10000, sndim=2, radius=5.0, extra_radius=False):
     # sndim是流形维数，不是环境维数
-    assert r1<=r2
-    axisdata = np.linspace(start=-r2, stop=r2, endpoint=True, num=sizepara)
-    data_raw = axisdata.reshape((sizepara, 1))
-    for i in range(1, sndim+1):
-        data_temp1 = axisdata[0] * np.ones((np.power(sizepara, i), 1))
-        data_temp_new = np.concatenate((data_temp1, data_raw), axis=1)
-        for j in axisdata[1:]:
-            data_temp1 = j * np.ones((np.power(sizepara, i), 1))
-            data_temp2 = np.concatenate((data_temp1, data_raw), axis=1)
-            data_temp_new = np.concatenate((data_temp_new, data_temp2), axis=0)
-        data_raw = data_temp_new.copy()
-    data_sphere = np.ones((1, sndim+1))
-    for k in range(np.size(data_raw, 0)):
-        if k % 100 == 0:
-            print('data_sphere创建进度：%d/%d' % (k+1, np.power(sizepara, sndim+1)))
-        if inner:
-            if 0 <= np.linalg.norm(data_raw[k, :], ord=2) <= r2:
-                data_sphere = np.vstack((data_sphere, data_raw[k, :]))
-        else:
-            if r1 < np.linalg.norm(data_raw[k, :], ord=2) <= r2:
-                data_sphere = np.vstack((data_sphere, data_raw[k, :]))
-    data_sphere = np.delete(data_sphere, 0, axis=0)
+    data = np.random.randn(n_samples, sndim+1)
+
+    # 2. Normalize each point to lie on the unit sphere
+    norms = np.linalg.norm(data, axis=1, keepdims=True)
+    data = data / norms
+
+    # 3. Scale by radius
+    data_sphere = data * radius
+
+    if extra_radius:
+        assert radius > extra_radius
+        data1 = data * (radius + extra_radius)
+        data2 = data * (radius - extra_radius)
+        data_sphere = np.vstack((data_sphere, data1))
+        data_sphere = np.vstack((data_sphere, data2))
+
     data_sphere_reverse = np.copy(data_sphere)
 
     colors = []
@@ -335,9 +329,9 @@ def make_SmaleSphere_data(r1=3.0, r2=7.0, sndim=2, sizepara=21, inner=False):
         colors.append(r)
         if r < 1e-15:
             # Avoid division by zero at the origin if inner=True
-            data_sphere_reverse[m, :] = -data_sphere_reverse[m, :] * (r1 + r2 - r) / 1e-15
+            data_sphere_reverse[m, 0:1 + sndim//2 * 2] = -data_sphere_reverse[m, 0:1 + sndim//2 * 2] * (2 * radius - r) / 1e-15
         else:
-            data_sphere_reverse[m, :] = -data_sphere_reverse[m, :] * (r1+r2-r) / r
+            data_sphere_reverse[m, 0:1 + sndim//2 * 2] = -data_sphere_reverse[m, 0:1 + sndim//2 * 2] * (2 * radius - r) / r
     colors = np.array(colors)
 
     sphere1 = torch.tensor(data_sphere, dtype=torch.float64)

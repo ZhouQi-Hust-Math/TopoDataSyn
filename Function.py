@@ -1,4 +1,5 @@
 import torch
+import sympy
 from TopoDataSyn import version_register
 
 class version_info(version_register):
@@ -87,7 +88,6 @@ class WeightConstraint_MLP_Loss(torch.nn.Module):
         self.det_weight = det_weight
         self.margin = margin
         self.mse_fn = torch.nn.MSELoss()
-        print(self.model.net1[0].weight.shape)
         assert self.width <= self.model.net1[0].weight.shape[0] and self.width <= self.model.net1[0].weight.shape[1]
         assert self.width <= self.model.net2[0].weight.shape[0] and self.width <= self.model.net2[0].weight.shape[1]
     def forward(self, output, target):
@@ -118,3 +118,36 @@ class WeightConstraint_MLP_Loss(torch.nn.Module):
         # 总损失 = MSE + lambda * Penalty
         total_loss = mse_loss + self.det_weight * det_penalty
         return total_loss
+
+
+def analyze_tensor(matrix_tensor: torch.Tensor):
+    """
+    对于一个torch.tensor:
+    - 如果是方阵，则依次返回Jordan分解、行列式、奇异值分解；
+    - 如果不是方阵，则返回False，False，奇异值分解。
+    """
+    if matrix_tensor.dim() != 2:
+        raise ValueError("输入的 tensor 必须是二维矩阵")
+    # 奇异值分解 SVD (对所有矩阵都适用)
+    # torch.linalg.svd 返回 U, S, Vh (其中 matrix = U @ diag(S) @ Vh)
+    # 注意：根据 PyTorch 版本，默认可能返回 (U, S, Vh)
+    svd_result = torch.linalg.svd(matrix_tensor)
+    # 判断是否为方阵
+    is_square = matrix_tensor.shape[0] == matrix_tensor.shape[1]
+    if is_square:
+        # 1. 计算行列式
+        # 注意: torch.linalg.det 要求输入 tensor 的数据类型为浮点型或复数型
+        det_result = torch.linalg.det(matrix_tensor.to(torch.float32))
+        # 2. 计算 Jordan 分解 (借助 SymPy)
+        try:
+            # 将 PyTorch Tensor 转换为 numpy 数组，再转换为 SymPy 矩阵
+            sympy_matrix = sympy.Matrix(matrix_tensor.detach().cpu().numpy())
+            # jordan_form() 返回 (P, J)，使得 original_matrix = P * J * P**-1
+            P, J = sympy_matrix.jordan_form()
+            jordan_result = (P, J)
+        except Exception as e:
+            print(f"Jordan 分解计算失败: {e}")
+            jordan_result = None
+        return jordan_result, det_result, svd_result
+    else:
+        return False, False, svd_result

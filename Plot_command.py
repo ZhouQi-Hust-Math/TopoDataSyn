@@ -543,7 +543,7 @@ def Plot_ResNet_noskiplayers(raw_net, data_in, figcolor=None, save_path=[], laye
                  dim_index=dim_index, axis_equal=axis_equal)
 
 
-def Plot_Smale_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)], frame=False,
+def Plot_Smale_MLP_layers(raw_net, data_in, figcolor=None, fig_row_col=[2, 4], save_path=[], layer_show=[i for i in range(3)], tangent_space=False,
                 *, axis_visible = False, cmap='viridis', figsize = (16, 10),
                 dim_index=[[0, 1, 2], [0, 1, 2], [0, 1, 2]], axis_equal=True):
     # 如果是1维线性数据，则扩容成2维
