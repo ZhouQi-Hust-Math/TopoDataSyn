@@ -9,7 +9,7 @@ torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260426-12:20')
+        super().__init__(timeversion='260428-17:27')
 
 
 def make_disk_data(twist=2, sizepara=41):
@@ -244,6 +244,36 @@ def make_swissroll_data(radiusrange=2, thetapara=np.pi, height=1, sizepara=None,
     colors = x4
     print('数据集已生成，大小为%d乘%d' % (sizepara[0], sizepara[1]))
     return put, output, colors
+
+def make_spiral_data(radiusrange=[0.5, 2.5], thetapara=np.pi, sizepara=None, in_out = 12):
+    if sizepara is None:
+        sizepara = 21
+    x1 = np.zeros((sizepara, 1))
+    x2 = np.zeros((sizepara, 1))
+    x3 = np.zeros((sizepara, 1))
+
+    # r=0处不可微，尽量避免
+    assert radiusrange[1] > radiusrange[0] > 0
+    radiuslist = np.linspace(start=radiusrange[0], stop=radiusrange[1], num=sizepara[0], endpoint=True).reshape(sizepara[0], 1)
+    for i in range(sizepara):
+        x1[i] = radiuslist[i]
+        x2[i] = radiuslist[i] * np.cos(radiuslist[i] * thetapara)
+        x3[i] = radiuslist[i] * np.sin(radiuslist[i] * thetapara)
+
+    temp1 = np.concatenate((x2, x3), axis=1)
+    if in_out == 12:
+        put = torch.tensor(x1, dtype=torch.float64)
+        output = torch.tensor(temp1, dtype=torch.float64)
+    elif in_out == 21:
+        put = torch.tensor(temp1, dtype=torch.float64)
+        output = torch.tensor(x1, dtype=torch.float64)
+    else:
+        warnings.warn('输入输出维数错误')
+
+    colors = x1
+    print('数据集已生成, 半径范围为%f->%f, 数据集大小为%d' % (radiusrange[0], radiusrange[1], sizepara))
+    return put, output, colors
+
 
 def make_thickSn_data(r1=3.0, r2=7.0, sndim=2, sizepara=21, inner=False):
     # sndim是流形维数，不是环境维数
