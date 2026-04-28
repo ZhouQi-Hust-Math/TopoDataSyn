@@ -151,3 +151,69 @@ def analyze_tensor(matrix_tensor: torch.Tensor):
         return jordan_result, det_result, svd_result
     else:
         return False, False, svd_result
+
+
+class Spectral_norm_projection(torch.nn.Module):
+    """
+            Project a matrix onto the spectral norm ball:
+
+                { W : ||W||_2 <= c }
+
+            Usage:
+                projector = Project_ResNet_spectral_norm(c=0.99)
+                projector(W)
+
+            This module performs in-place projection and should usually be called
+            after optimizer.step().
+            """
+    def __init__(self, c: float = 0.99):
+        super().__init__()
+
+        if c <= 0:
+            raise ValueError("c must be positive.")
+        self.c = c
+
+    @torch.no_grad()
+    def forward(self, W: torch.Tensor) -> torch.Tensor:
+        """
+        In-place projection of W onto {A : ||A||_2 <= c}.
+
+        Args:
+            W: 2D tensor, usually a weight matrix.
+
+        Returns:
+            The projected W itself.
+        """
+        if W.ndim != 2:
+            raise ValueError("SpectralNormProjector expects a 2D matrix.")
+
+        U, S, Vh = torch.linalg.svd(W, full_matrices=False)
+
+        S_clipped = torch.clamp(S, max=self.c)
+        W_projected = (U * S_clipped.unsqueeze(0)) @ Vh
+        W.copy_(W_projected)
+
+        return W
+
+class Project_ResNet_spectral_norm(torch.nn.Module):
+    def __init__(self, c: float = 0.99):
+        super().__init__()
+        if c <= 0:
+            raise ValueError("c must be positive.")
+        self.c = c
+        self.proj_fn = Spectral_norm_projection(c=self.c)
+
+    @torch.no_grad()
+    def forward(self, ResNet: torch.nn.Module) -> None:
+        """
+        Apply spectral norm projection to all nn.Linear layers in model.
+
+        Parameters:
+            ResNet: a torch.nn.Module containing Linear layers (defined as ResNet() in TopoDataSyn/NN_model.py).
+
+        Returns:
+            The same model, after in-place projection.
+        """
+        for module in ResNet.blocks:
+            if isinstance(module, torch.nn.Linear):
+                module.weight = self.proj_fn(module.weight)

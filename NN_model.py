@@ -139,7 +139,7 @@ class ResNet(torch.nn.Module):
         if isinstance(acf, list):
             acf=acf
             print(acf)
-        else:
+        elif isinstance(acf, torch.nn.Module):
             acf=[acf for k in range(blocknum*blockdepth)]
             print(acf)
         assert len(acf) == blocknum*blockdepth and blocknum>=1 and blockdepth>=1
@@ -180,8 +180,9 @@ class HomoResNet(ResNet):
         return x
 
 
-def Net_train(Net, train_loader, temp_loss=np.inf, device='cpu', loss_fn=torch.nn.MSELoss(reduction='mean'), maxepoch=10,
-              iteration = 2000000, frameduration = 1000, eps=5e-5, printstr='-', modelsavepath='-'):
+def Net_train(Net, train_loader, temp_loss=np.inf, device='cpu', loss_fn=torch.nn.MSELoss(reduction='mean'),
+              proj_fn=None, maxepoch=10, iteration = 2000000, frameduration = 1000, eps=5e-5,
+              printstr='-', modelsavepath='-'):
     Net.to(device)
     start_time = time.time()
     for epoch in range(maxepoch):
@@ -196,6 +197,9 @@ def Net_train(Net, train_loader, temp_loss=np.inf, device='cpu', loss_fn=torch.n
                     LOSS = loss_fn(Net(Input), output)
                     LOSS.backward()
                     opt_s.step()
+                    if proj_fn is not None:
+                        proj_fn(Net)
+
                     record_time = time.time()
                     remain_time = (record_time - start_time) * (
                             maxepoch * iteration - epoch * iteration - t - 1) / (epoch * iteration + t + 1)
@@ -210,6 +214,9 @@ def Net_train(Net, train_loader, temp_loss=np.inf, device='cpu', loss_fn=torch.n
                     LOSS = loss_fn(Net(Input), output)
                     LOSS.backward()
                     opt_s.step()
+                    if proj_fn is not None:
+                        proj_fn(Net)
+
         LOSS = loss_fn(Net(Input), output)
         if LOSS.item() <= temp_loss:
             net_para = {'net': Net.state_dict()}

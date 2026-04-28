@@ -245,20 +245,22 @@ def make_swissroll_data(radiusrange=2, thetapara=np.pi, height=1, sizepara=None,
     print('数据集已生成，大小为%d乘%d' % (sizepara[0], sizepara[1]))
     return put, output, colors
 
-def make_spiral_data(radiusrange=[0.5, 2.5], thetapara=np.pi, sizepara=None, in_out = 12):
-    if sizepara is None:
-        sizepara = 21
+def make_spiral_data(radiusrange=[0.5, 2.5], rpow=1.0, thetapara=np.pi, sizepara=21, in_out = 12):
     x1 = np.zeros((sizepara, 1))
     x2 = np.zeros((sizepara, 1))
     x3 = np.zeros((sizepara, 1))
 
-    # r=0处不可微，尽量避免
-    assert radiusrange[1] > radiusrange[0] > 0
-    radiuslist = np.linspace(start=radiusrange[0], stop=radiusrange[1], num=sizepara[0], endpoint=True).reshape(sizepara[0], 1)
+    if rpow <= 1.0:
+        # r=0处不可微，尽量避免
+        assert radiusrange[1] > radiusrange[0] > 0
+    elif rpow > 1.0:
+        assert radiusrange[1] > radiusrange[0] >= 0
+
+    radiuslist = np.linspace(start=radiusrange[0], stop=radiusrange[1], num=sizepara, endpoint=True).reshape(sizepara, 1)
     for i in range(sizepara):
         x1[i] = radiuslist[i]
-        x2[i] = radiuslist[i] * np.cos(radiuslist[i] * thetapara)
-        x3[i] = radiuslist[i] * np.sin(radiuslist[i] * thetapara)
+        x2[i] = np.pow(radiuslist[i], rpow) * np.cos(radiuslist[i] * thetapara)
+        x3[i] = np.pow(radiuslist[i], rpow) * np.sin(radiuslist[i] * thetapara)
 
     temp1 = np.concatenate((x2, x3), axis=1)
     if in_out == 12:
@@ -270,8 +272,8 @@ def make_spiral_data(radiusrange=[0.5, 2.5], thetapara=np.pi, sizepara=None, in_
     else:
         warnings.warn('输入输出维数错误')
 
-    colors = x1
-    print('数据集已生成, 半径范围为%f->%f, 数据集大小为%d' % (radiusrange[0], radiusrange[1], sizepara))
+    colors = radiuslist
+    print('数据集已生成, 半径范围为%f->%f, r的阶数为%.1f, 数据集大小为%d' % (radiusrange[0], radiusrange[1], rpow, sizepara))
     return put, output, colors
 
 
