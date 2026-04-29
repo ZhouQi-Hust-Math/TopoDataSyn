@@ -259,8 +259,8 @@ def make_spiral_data(radiusrange=[0.5, 2.5], rpow=1.0, thetapara=np.pi, sizepara
     radiuslist = np.linspace(start=radiusrange[0], stop=radiusrange[1], num=sizepara, endpoint=True).reshape(sizepara, 1)
     for i in range(sizepara):
         x1[i] = radiuslist[i]
-        x2[i] = np.pow(radiuslist[i], rpow) * np.cos(radiuslist[i] * thetapara)
-        x3[i] = np.pow(radiuslist[i], rpow) * np.sin(radiuslist[i] * thetapara)
+        x2[i] = np.power(radiuslist[i], rpow) * np.cos(radiuslist[i] * thetapara)
+        x3[i] = np.power(radiuslist[i], rpow) * np.sin(radiuslist[i] * thetapara)
 
     temp1 = np.concatenate((x2, x3), axis=1)
     if in_out == 12:

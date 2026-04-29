@@ -72,7 +72,7 @@ class PLeakyReLU(torch.nn.Module):
             return torch.where(x >= 0, x, self.weight.view(*shape) * x)
 
 
-def analyze_tensor(matrix_tensor: torch.Tensor):
+def Tensor_Jordan_SVD(matrix_tensor: torch.Tensor):
     """
     对于一个torch.tensor:
     - 如果是方阵，则依次返回Jordan分解、行列式、奇异值分解；
@@ -105,45 +105,33 @@ def analyze_tensor(matrix_tensor: torch.Tensor):
         return False, False, svd_result
 
 
-class WeightConstraint_MLP_Loss(torch.nn.Module):
-    def __init__(self, model, width=3, det_weight:float=100.0, margin:float=1e-4):
-        """
-        model: 传入你的 MLP 模型实例
-        det_weight: 行列式惩罚项的权重系数，越大则约束越硬
-        margin: 期望行列式至少大于这个微小的正值
-        # 使用示例：
-        # net = MLP(width=2, depth=2, w_in=2) # 假设 w_in=width 以确保方阵
-        # criterion = CustomConstrainedLoss(net, det_weight=0.1)
-        # loss = criterion(net(PUT), TARGET)
-        """
-        super(WeightConstraint_MLP_Loss, self).__init__()
+class Smale_Weight_MLP_Loss(torch.nn.Module):
+    def __init__(self, model, blockdepth=1, det_weight:float=100.0, margin:float=1e-4):
+        super(Smale_Weight_MLP_Loss, self).__init__()
         self.model = model
-        self.width = width
+        self.blockdepth = blockdepth
         self.det_weight = det_weight
         self.margin = margin
         self.mse_fn = torch.nn.MSELoss()
-        assert self.width <= self.model.net1[0].weight.shape[0] and self.width <= self.model.net1[0].weight.shape[1]
-        assert self.width <= self.model.net2[0].weight.shape[0] and self.width <= self.model.net2[0].weight.shape[1]
+
     def forward(self, output, target):
         # 1. 计算基本的 MSE 误差
         mse_loss = self.mse_fn(output, target)
-        #for name, param in self.model.named_parameters():
-        #    if "weight" in name:
-        #        print(f"{name}: {param.data}")
         # 2. 计算行列式惩罚项
         det_penalty = 0.0
+        W = torch.eye(self.model.net1[0].weight.shape[1]).to(output.device)
         # 遍历 net.net1 中的所有子模块
         for name, layer in self.model.net1.named_children():
             if isinstance(layer, torch.nn.Linear):
-                W = layer.weight[0:self.width, 0:self.width]
-                d = torch.linalg.det(W)
-                # 惩罚项：如果 d < margin，则产生惩罚
-                # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
-                det_penalty += torch.relu(self.margin - d)
+                W = layer.weight @ W
+        d = torch.linalg.det(W @ W.T)
+        # 惩罚项：如果 d < margin，则产生惩罚
+        # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
+        det_penalty += torch.relu(self.margin - d)
 
         for name, layer in self.model.net2.named_children():
             if isinstance(layer, torch.nn.Linear):
-                W = layer.weight[0:self.width, 0:self.width]
+                W = layer.weight
                 d = torch.linalg.det(W)
                 # 惩罚项：如果 d < margin，则产生惩罚
                 # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
@@ -178,7 +166,7 @@ class WeightConstraint_ResNet_Loss(torch.nn.Module):
 
         # 遍历 net.net1 中的所有子模块
         if not self.Homo:
-            for name, layer in self.model.net1.named_children():
+            for name, layer in self.model.net1.named_modules():
                 if isinstance(layer, torch.nn.Linear):
                     W = layer.weight[0:self.width, 0:self.width]
                     d = torch.linalg.det(W)
@@ -186,7 +174,7 @@ class WeightConstraint_ResNet_Loss(torch.nn.Module):
                     # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
                     det_penalty += torch.relu(self.margin - d)
 
-            for name, layer in self.model.net2.named_children():
+            for name, layer in self.model.net2.named_modules():
                 if isinstance(layer, torch.nn.Linear):
                     W = layer.weight[0:self.width, 0:self.width]
                     d = torch.linalg.det(W)
@@ -194,7 +182,7 @@ class WeightConstraint_ResNet_Loss(torch.nn.Module):
                     # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
                     det_penalty += torch.relu(self.margin - d)
 
-        for module, block in self.model.blocks.named_children():
+        for module, block in self.model.blocks.named_modules():
             if isinstance(block, torch.nn.Linear):
                 d = torch.sqrt(torch.trace(block.weight @ block.weight.T))
                 # 惩罚项：如果 d < margin，则产生惩罚
