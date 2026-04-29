@@ -1,10 +1,11 @@
 import torch
 import sympy
+import time
 from TopoDataSyn import version_register
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260424-23:16')
+        super().__init__(timeversion='260429-11:16')
 
 # 自定义带可学习参数的激活函数 (已修正权重范围限制)
 class PELU(torch.nn.Module):
@@ -71,6 +72,39 @@ class PLeakyReLU(torch.nn.Module):
             return torch.where(x >= 0, x, self.weight.view(*shape) * x)
 
 
+def analyze_tensor(matrix_tensor: torch.Tensor):
+    """
+    对于一个torch.tensor:
+    - 如果是方阵，则依次返回Jordan分解、行列式、奇异值分解；
+    - 如果不是方阵，则返回False，False，奇异值分解。
+    """
+    if matrix_tensor.dim() != 2:
+        raise ValueError("输入的 tensor 必须是二维矩阵")
+    # 奇异值分解 SVD (对所有矩阵都适用)
+    # torch.linalg.svd 返回 U, S, Vh (其中 matrix = U @ diag(S) @ Vh)
+    # 注意：根据 PyTorch 版本，默认可能返回 (U, S, Vh)
+    svd_result = torch.linalg.svd(matrix_tensor)
+    # 判断是否为方阵
+    is_square = matrix_tensor.shape[0] == matrix_tensor.shape[1]
+    if is_square:
+        # 1. 计算行列式
+        # 注意: torch.linalg.det 要求输入 tensor 的数据类型为浮点型或复数型
+        det_result = torch.linalg.det(matrix_tensor.to(torch.float32))
+        # 2. 计算 Jordan 分解 (借助 SymPy)
+        try:
+            # 将 PyTorch Tensor 转换为 numpy 数组，再转换为 SymPy 矩阵
+            sympy_matrix = sympy.Matrix(matrix_tensor.detach().cpu().numpy())
+            # jordan_form() 返回 (P, J)，使得 original_matrix = P * J * P**-1
+            P, J = sympy_matrix.jordan_form()
+            jordan_result = (P, J)
+        except Exception as e:
+            print(f"Jordan 分解计算失败: {e}")
+            jordan_result = None
+        return jordan_result, det_result, svd_result
+    else:
+        return False, False, svd_result
+
+
 class WeightConstraint_MLP_Loss(torch.nn.Module):
     def __init__(self, model, width=3, det_weight:float=100.0, margin:float=1e-4):
         """
@@ -120,52 +154,66 @@ class WeightConstraint_MLP_Loss(torch.nn.Module):
         return total_loss
 
 
-def analyze_tensor(matrix_tensor: torch.Tensor):
-    """
-    对于一个torch.tensor:
-    - 如果是方阵，则依次返回Jordan分解、行列式、奇异值分解；
-    - 如果不是方阵，则返回False，False，奇异值分解。
-    """
-    if matrix_tensor.dim() != 2:
-        raise ValueError("输入的 tensor 必须是二维矩阵")
-    # 奇异值分解 SVD (对所有矩阵都适用)
-    # torch.linalg.svd 返回 U, S, Vh (其中 matrix = U @ diag(S) @ Vh)
-    # 注意：根据 PyTorch 版本，默认可能返回 (U, S, Vh)
-    svd_result = torch.linalg.svd(matrix_tensor)
-    # 判断是否为方阵
-    is_square = matrix_tensor.shape[0] == matrix_tensor.shape[1]
-    if is_square:
-        # 1. 计算行列式
-        # 注意: torch.linalg.det 要求输入 tensor 的数据类型为浮点型或复数型
-        det_result = torch.linalg.det(matrix_tensor.to(torch.float32))
-        # 2. 计算 Jordan 分解 (借助 SymPy)
-        try:
-            # 将 PyTorch Tensor 转换为 numpy 数组，再转换为 SymPy 矩阵
-            sympy_matrix = sympy.Matrix(matrix_tensor.detach().cpu().numpy())
-            # jordan_form() 返回 (P, J)，使得 original_matrix = P * J * P**-1
-            P, J = sympy_matrix.jordan_form()
-            jordan_result = (P, J)
-        except Exception as e:
-            print(f"Jordan 分解计算失败: {e}")
-            jordan_result = None
-        return jordan_result, det_result, svd_result
-    else:
-        return False, False, svd_result
+class WeightConstraint_ResNet_Loss(torch.nn.Module):
+    def __init__(self, model, c:float=0.99, width:int=3, Homo=False, weight:float=100.0, margin:float=1e-4):
+        super().__init__()
+        if c <= 0:
+            raise ValueError("c must be positive.")
+        self.model = model
+        self.width = width
+        self.weight = weight
+        self.margin = margin
+        self.mse_fn = torch.nn.MSELoss()
+        self.c = c
+        self.Homo = Homo
+
+    def forward(self, output, target):
+        # 1. 计算基本的 MSE 误差
+        mse_loss = self.mse_fn(output, target)
+        # for name, param in self.model.named_parameters():
+        #    if "weight" in name:
+        #        print(f"{name}: {param.data}")
+        # 2. 计算行列式惩罚项
+        det_penalty = 0.0
+
+        # 遍历 net.net1 中的所有子模块
+        if not self.Homo:
+            for name, layer in self.model.net1.named_children():
+                if isinstance(layer, torch.nn.Linear):
+                    W = layer.weight[0:self.width, 0:self.width]
+                    d = torch.linalg.det(W)
+                    # 惩罚项：如果 d < margin，则产生惩罚
+                    # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
+                    det_penalty += torch.relu(self.margin - d)
+
+            for name, layer in self.model.net2.named_children():
+                if isinstance(layer, torch.nn.Linear):
+                    W = layer.weight[0:self.width, 0:self.width]
+                    d = torch.linalg.det(W)
+                    # 惩罚项：如果 d < margin，则产生惩罚
+                    # 使用 ReLU(margin - d) 确保当 d > margin 时导数为 0
+                    det_penalty += torch.relu(self.margin - d)
+
+        for module, block in self.model.blocks.named_children():
+            if isinstance(block, torch.nn.Linear):
+                d = torch.sqrt(torch.trace(block.weight @ block.weight.T))
+                # 惩罚项：如果 d < margin，则产生惩罚
+                # 使用 ReLU(d-c) 确保当 d < c 时导数为 0
+                det_penalty += torch.relu(d - self.c)
+
+        # 总损失 = MSE + lambda * Penalty
+        total_loss = mse_loss + self.weight * det_penalty
+        return total_loss
 
 
-class Spectral_norm_projection(torch.nn.Module):
+class Norm_Frob_projection(torch.nn.Module):
     """
             Project a matrix onto the spectral norm ball:
-
                 { W : ||W||_2 <= c }
-
             Usage:
                 projector = Project_ResNet_spectral_norm(c=0.99)
                 projector(W)
-
-            This module performs in-place projection and should usually be called
-            after optimizer.step().
-            """
+    """
     def __init__(self, c: float = 0.99):
         super().__init__()
 
@@ -187,13 +235,16 @@ class Spectral_norm_projection(torch.nn.Module):
         if W.ndim != 2:
             raise ValueError("SpectralNormProjector expects a 2D matrix.")
 
-        U, S, Vh = torch.linalg.svd(W, full_matrices=False)
-
-        S_clipped = torch.clamp(S, max=self.c)
-        W_projected = (U * S_clipped.unsqueeze(0)) @ Vh
-        W.copy_(W_projected)
-
+        # ||W||_2
+        sigma = torch.norm(W, p='fro')
+        # c as tensor on the same device/dtype as W
+        c_tensor = torch.tensor(self.c, dtype=W.dtype, device=W.device)
+        # scale = c / max(c, ||W||_2)
+        scale = c_tensor / torch.maximum(c_tensor, sigma)
+        # in-place update
+        W.mul_(scale)
         return W
+
 
 class Project_ResNet_spectral_norm(torch.nn.Module):
     def __init__(self, c: float = 0.99):
@@ -201,7 +252,7 @@ class Project_ResNet_spectral_norm(torch.nn.Module):
         if c <= 0:
             raise ValueError("c must be positive.")
         self.c = c
-        self.proj_fn = Spectral_norm_projection(c=self.c)
+        self.proj_fn = Norm_Frob_projection(c=self.c)
 
     @torch.no_grad()
     def forward(self, ResNet: torch.nn.Module) -> None:
@@ -215,5 +266,9 @@ class Project_ResNet_spectral_norm(torch.nn.Module):
             The same model, after in-place projection.
         """
         for module in ResNet.blocks:
-            if isinstance(module, torch.nn.Linear):
-                module.weight = self.proj_fn(module.weight)
+            for block in module.model:
+                if isinstance(block, torch.nn.Linear):
+                    block.weight = self.proj_fn(block.weight)
+
+
+

@@ -7,7 +7,7 @@ from TopoDataSyn import version_register
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260415-10:28')
+        super().__init__(timeversion='260429-10:28')
 
 
 torch.set_default_dtype(torch.float64)  # 精度默认为double类型
@@ -105,6 +105,7 @@ def tensor_select_index(trainset=None, testset=None):
         print("数据筛选进度%.2f%%" % (100 * (i+1)/testset.size()[0]))
     return index_list
 
+
 class building_resblock(torch.nn.Module):
     def __init__(self, width=3, blockwidth=1, acf=[torch.nn.ELU()], batchnorm1d=False):
         super(building_resblock, self).__init__()
@@ -132,6 +133,7 @@ class building_resblock(torch.nn.Module):
         # 残差相加
         result += down
         return result
+
 
 class ResNet(torch.nn.Module):
     def __init__(self, width=3, w_in=3, w_out=2, acf=[torch.nn.ELU()], blocknum=1, blockwidth=1, blockdepth=2, affine_layer=False, batchnorm1d=False):
