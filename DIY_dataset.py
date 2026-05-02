@@ -273,7 +273,7 @@ def make_spiral_data(radiusrange=[0.5, 2.5], rpow=1.0, thetapara=np.pi, sizepara
         warnings.warn('输入输出维数错误')
 
     colors = radiuslist
-    print('数据集已生成, 半径范围为%f->%f, r的阶数为%.1f, 数据集大小为%d' % (radiusrange[0], radiusrange[1], rpow, sizepara))
+    print('数据集已生成, 半径范围为%f->%f, r的阶数为%.1f, 角度变化率为%.1f, 数据集大小为%d' % (radiusrange[0], radiusrange[1], rpow, thetapara, sizepara))
     return put, output, colors
 
 
