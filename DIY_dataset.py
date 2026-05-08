@@ -9,7 +9,7 @@ torch.set_default_dtype(torch.float64)  # 精度默认为double类型
 
 class version_info(version_register):
     def __init__(self):
-        super().__init__(timeversion='260428-17:27')
+        super().__init__(timeversion='260508-15:00')
 
 
 def make_disk_data(twist=2, sizepara=41):
@@ -35,7 +35,7 @@ def make_disk_data(twist=2, sizepara=41):
     return put, output, colors
 
 
-def make_ring_data(r=2, sizepara=1000, mindist=2, in_dim=3, out_dim=2):
+def make_link_data(r=2, sizepara=1000, mindist=2, in_dim=3, out_dim=2):
     # sizepara is the num of segments
     data1 = np.zeros([sizepara, 3])
     data2 = np.zeros([sizepara, 3])

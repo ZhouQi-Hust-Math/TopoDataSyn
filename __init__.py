@@ -76,3 +76,25 @@ def check_timeversion(input_time, time_dict:dict):
     return input_time > max_time, max_module, max_time
 
 
+class trainingconfig_MLP:
+    def __init__(self, width:int=2, maxepoch:int=10, iteration:int=1000000, frameduration:int=1000, netname:str='ELU', eps:float=1e-4):
+        self.width = width
+        self.maxepoch = maxepoch
+        self.iteration = iteration
+        self.frameduration = frameduration
+        self.netname = netname
+        self.eps = eps
+
+
+class trainingconfig_ResNet:
+    def __init__(self, width:int=2, bwidth:int=2, bdepth:int=1, maxepoch:int=10, iteration:int=1000000, frameduration:int=1000,
+                 affine_open:bool=False, netname:str='ELU', eps:float=1e-4):
+        self.width = width
+        self.bwidth = bwidth
+        self.bdepth = bdepth
+        self.maxepoch = maxepoch
+        self.iteration = iteration
+        self.frameduration = frameduration
+        self.affine_open = affine_open
+        self.netname = netname
+        self.eps = eps
